@@ -1,0 +1,12 @@
+.top-bar { padding:12px 16px; text-align:right; }
+.top-btn { color:#d4a853; font-size:14px; }
+.waterfall { padding:0 12px; display:flex; flex-wrap:wrap; }
+.wf-item { width:48%; margin:1%; background:#132e1f; border-radius:10px; overflow:hidden; }
+.wf-img { width:100%; aspect-ratio:1; background:#0a1a10; }
+.wf-info { padding:8px; display:flex; justify-content:space-between; align-items:center; }
+.wf-name { font-size:14px; color:#d4a853; font-weight:600; }
+.wf-grade { font-size:12px; color:#d4a853; background:rgba(212,168,83,.15); padding:2px 6px; border-radius:4px; }
+.wf-user { padding:0 8px 8px; display:flex; justify-content:space-between; }
+.wf-nick { font-size:12px; color:#8ab89a; }
+.wf-likes { font-size:11px; color:#6a9a7a; }
+.empty { text-align:center; padding:60px 20px; color:#6a9a7a; }

@@ -1,0 +1,35 @@
+{
+  "pages": [
+    "pages/identify/identify",
+    "pages/species/species",
+    "pages/collections/collections",
+    "pages/breeding/breeding",
+    "pages/my/my",
+    "pages/species-detail/species-detail",
+    "pages/collection-detail/collection-detail",
+    "pages/upload/upload",
+    "pages/breeding-detail/breeding-detail",
+    "pages/breeder/breeder"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#1a3a2a",
+    "navigationBarTitleText": "滴个龟龟",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#0d2518"
+  },
+  "tabBar": {
+    "color": "#6a9a7a",
+    "selectedColor": "#d4a853",
+    "backgroundColor": "#0d2518",
+    "borderStyle": "black",
+    "list": [
+      {"pagePath": "pages/identify/identify", "text": "识龟", "iconPath": "images/tab-scan.png", "selectedIconPath": "images/tab-scan-active.png"},
+      {"pagePath": "pages/species/species", "text": "品种", "iconPath": "images/tab-book.png", "selectedIconPath": "images/tab-book-active.png"},
+      {"pagePath": "pages/collections/collections", "text": "展示", "iconPath": "images/tab-grid.png", "selectedIconPath": "images/tab-grid-active.png"},
+      {"pagePath": "pages/breeding/breeding", "text": "血统", "iconPath": "images/tab-tree.png", "selectedIconPath": "images/tab-tree-active.png"},
+      {"pagePath": "pages/my/my", "text": "我的", "iconPath": "images/tab-user.png", "selectedIconPath": "images/tab-user-active.png"}
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

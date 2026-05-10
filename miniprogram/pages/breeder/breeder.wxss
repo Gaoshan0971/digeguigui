@@ -1,0 +1,6 @@
+.br-nick { font-size:22px; color:#d4a853; display:block; }
+.br-role { font-size:13px; color:#8ab89a; display:block; margin:6px 0; }
+.br-stats { display:flex; justify-content:space-around; margin-top:16px; }
+.stat { text-align:center; }
+.stat-num { font-size:24px; color:#d4a853; font-weight:700; display:block; }
+.stat-label { font-size:12px; color:#6a9a7a; }

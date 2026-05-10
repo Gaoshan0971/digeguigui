@@ -1,0 +1,19 @@
+<view class="page">
+  <view class="top-bar" bindtap="goUpload">
+    <text class="top-btn">🐢+ 晒我的龟</text>
+  </view>
+  <view class="waterfall">
+    <view wx:for="{{list}}" wx:key="collection_id" class="wf-item" bindtap="goDetail" data-id="{{item.collection_id}}">
+      <image src="{{item.image_urls[0]}}" mode="aspectFill" class="wf-img" />
+      <view class="wf-info">
+        <text class="wf-name">{{item.species_name}}</text>
+        <text class="wf-grade" wx:if="{{item.overall_grade}}">{{item.overall_grade}}</text>
+      </view>
+      <view class="wf-user">
+        <text class="wf-nick">{{item.nickname}}</text>
+        <text class="wf-likes">❤️ {{item.likes}}</text>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{!list.length}}" class="empty">还没有藏品，快来晒第一只龟吧 🐢</view>
+</view>

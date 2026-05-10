@@ -1,0 +1,14 @@
+<view class="page">
+  <view wx:if="{{!user}}" class="card" style="text-align:center">
+    <text class="login-hint">登录后查看我的藏品和血统</text>
+    <button class="btn-primary" bindtap="login" style="margin-top:12px">微信登录</button>
+  </view>
+  <view wx:if="{{user}}" class="card" style="text-align:center">
+    <text class="my-name">{{user.nickname}}</text>
+  </view>
+  <view wx:if="{{user}}" class="my-menu">
+    <view class="menu-item"><text>我的藏品</text><text>→</text></view>
+    <view class="menu-item"><text>我的繁育记录</text><text>→</text></view>
+    <view class="menu-item"><text>我的鉴赏</text><text>→</text></view>
+  </view>
+</view>

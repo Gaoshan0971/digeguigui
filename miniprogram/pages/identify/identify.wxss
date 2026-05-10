@@ -1,0 +1,94 @@
+/* pages/identify/identify.wxss */
+.page { padding-bottom: 30px; }
+
+.camera-box {
+  width: 100%;
+  height: 400rpx;
+  background: #0a1a10;
+  position: relative;
+  overflow: hidden;
+}
+.camera-hint {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: #4a7a5a; font-size: 14px;
+}
+.camera-icon { font-size: 48px; margin-bottom: 8px; }
+.preview-img { width: 100%; height: 100%; }
+
+.upload-btn {
+  margin: 12px 16px;
+  padding: 14px;
+  border: 2px dashed #2a5a3a;
+  border-radius: 12px;
+  text-align: center;
+  color: #8ab89a;
+  font-size: 15px;
+}
+.action-row {
+  display: flex;
+  gap: 12px;
+  margin: 12px 16px;
+}
+.action-row button { flex: 1; }
+
+.loading-box {
+  text-align: center;
+  padding: 40px;
+  color: #8ab89a;
+}
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid #2a5a3a;
+  border-top-color: #d4a853;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.error-msg {
+  background: #3a1a1a; color: #e8a0a0;
+  padding: 12px 16px; margin: 12px 16px;
+  border-radius: 8px; font-size: 14px;
+}
+
+.result-card { margin: 0 16px; }
+.species-header { margin-bottom: 12px; }
+.species-name { font-size: 24px; color: #d4a853; font-weight: 700; display: block; }
+.species-latin { font-size: 13px; color: #6a9a7a; }
+
+.meta-grid { display: flex; gap: 8px; margin-bottom: 12px; }
+.meta-item {
+  flex: 1; background: #0d2518;
+  padding: 10px; border-radius: 8px;
+}
+.meta-label { font-size: 11px; color: #6a9a7a; display: block; }
+.meta-value { font-size: 15px; color: #e8e0c8; font-weight: 600; }
+
+.desc-text {
+  color: #b0c8b8; font-size: 14px;
+  line-height: 1.6; margin-bottom: 12px;
+  display: block;
+}
+
+.care-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.care-item {
+  background: #0d2518; padding: 8px 12px;
+  border-radius: 6px; min-width: 40%;
+}
+.care-label { font-size: 11px; color: #6a9a7a; display: block; }
+.care-value { font-size: 13px; color: #e8e0c8; }
+
+.confidence { font-size: 12px; color: #6a9a7a; margin-bottom: 12px; }
+
+.candidates { border-top: 1px solid #1a3a2a; padding-top: 12px; }
+.section-title { font-size: 13px; color: #6a9a7a; margin-bottom: 6px; display: block; }
+.cand-item {
+  display: flex; justify-content: space-between;
+  padding: 6px 0; font-size: 14px; color: #8ab89a;
+}
+
+.result-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.result-actions button { margin: 0; }

@@ -1,0 +1,33 @@
+<view class="page" wx:if="{{item}}">
+  <image wx:for="{{item.image_urls}}" wx:key="*this" src="{{item}}" mode="aspectFill" class="detail-img" />
+  <view class="card">
+    <view class="flex-between">
+      <view>
+        <text class="d-name">{{item.species_name}}</text>
+        <text class="d-grade" wx:if="{{item.overall_grade}}">{{item.overall_grade}}</text>
+      </view>
+      <text bindtap="onLike">❤️ {{item.likes}}</text>
+    </view>
+    <text class="d-cap" wx:if="{{item.caption}}">{{item.caption}}</text>
+    <view class="d-scores" wx:if="{{item.shell_score}}">
+      <text class="score">壳形 {{item.shell_score}}</text>
+      <text class="score">头纹 {{item.head_score}}</text>
+      <text class="score">色泽 {{item.color_score}}</text>
+      <text class="score">体型 {{item.body_score}}</text>
+      <text class="score">状态 {{item.health_score}}</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="stitle">鉴赏评论</text>
+    <view wx:for="{{appraisals}}" wx:key="appraisal_id" class="app-item">
+      <text class="app-user">{{item.nickname}}</text>
+      <text class="app-comment">{{item.comment}}</text>
+    </view>
+    <view wx:if="{{!appraisals.length}}" class="text-muted">暂无鉴赏，来说两句</view>
+    <view class="comment-box">
+      <input value="{{comment}}" bindinput="onInput" placeholder="品相如何？" class="comment-input" />
+      <button bindtap="submitAppraisal" class="btn-primary" style="margin:8px 0">发表</button>
+    </view>
+  </view>
+</view>

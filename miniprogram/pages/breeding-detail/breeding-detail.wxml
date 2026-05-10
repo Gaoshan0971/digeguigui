@@ -1,0 +1,25 @@
+<view class="page" wx:if="{{breeding}}">
+  <view class="card">
+    <text class="br-title">{{breeding.breeder_name}} 的繁育配对</text>
+    <text class="br-date">{{breeding.pairing_date}}</text>
+  </view>
+  <view class="pair-row">
+    <view class="pair-item">
+      <text class="pair-label">父本</text>
+      <text wx:if="{{breeding.sire}}">{{breeding.sire.species_name}}</text>
+      <text wx:else>未知</text>
+    </view>
+    <text class="pair-x">×</text>
+    <view class="pair-item">
+      <text class="pair-label">母本</text>
+      <text wx:if="{{breeding.dam}}">{{breeding.dam.species_name}}</text>
+      <text wx:else>未知</text>
+    </view>
+  </view>
+  <view class="card">
+    <text class="stitle">子代 ({{breeding.offspring.length}}只)</text>
+    <view wx:for="{{breeding.offspring}}" wx:key="offspring_id" class="off-item">
+      <text>{{item.description||item.species_name||('子代'+(index+1))}}</text>
+    </view>
+  </view>
+</view>

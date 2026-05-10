@@ -1,0 +1,9 @@
+<view class="page">
+  <view wx:for="{{list}}" wx:key="breeding_id" class="card" bindtap="goDetail" data-id="{{item.breeding_id}}">
+    <text class="br-name" bindtap="goBreeder" data-id="{{item.breeder_id}}">{{item.breeder_name}} 的繁育记录</text>
+    <text class="br-date">{{item.pairing_date}}</text>
+    <text class="br-count">子代 {{item.offspring_count}} 只</text>
+    <text class="br-notes" wx:if="{{item.notes}}">{{item.notes}}</text>
+  </view>
+  <view wx:if="{{!list.length}}" class="empty">暂无繁育记录</view>
+</view>

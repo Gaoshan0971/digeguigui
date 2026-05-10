@@ -1,0 +1,11 @@
+<view class="page" wx:if="{{breeder}}">
+  <view class="card" style="text-align:center">
+    <text class="br-nick">{{breeder.nickname}}</text>
+    <text class="br-role">{{breeder.role==='breeder'?'繁育者':'爱好者'}} · 信誉 {{breeder.reputation}}</text>
+    <view class="br-stats">
+      <view class="stat"><text class="stat-num">{{breeder.collection_count}}</text><text class="stat-label">藏品</text></view>
+      <view class="stat"><text class="stat-num">{{breeder.breeding_count}}</text><text class="stat-label">繁育记录</text></view>
+      <view class="stat"><text class="stat-num">{{breeder.offspring_count}}</text><text class="stat-label">子代</text></view>
+    </view>
+  </view>
+</view>

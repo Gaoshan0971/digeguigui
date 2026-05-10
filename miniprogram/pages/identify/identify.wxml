@@ -1,0 +1,82 @@
+<!-- pages/identify/identify.wxml — 拍照识龟 -->
+<view class="page">
+  <!-- 相机区 -->
+  <view class="camera-box">
+    <camera wx:if="{{!previewUrl}}" device-position="back" flash="off" binderror="onCameraError" style="width:100%;height:100%">
+      <view class="camera-hint" wx:if="{{!cameraReady}}">
+        <text class="camera-icon">📸</text>
+        <text>点击下方拍照</text>
+      </view>
+    </camera>
+    <image wx:if="{{previewUrl}}" src="{{previewUrl}}" mode="aspectFill" class="preview-img" />
+  </view>
+
+  <!-- 操作区 -->
+  <view wx:if="{{!loading && !result}}">
+    <button wx:if="{{!previewUrl}}" class="btn-primary" bindtap="takePhoto">📷 拍照识别</button>
+    <view wx:if="{{!previewUrl}}" class="upload-btn" bindtap="choosePhoto">🖼️ 从相册选择</view>
+    <view wx:if="{{previewUrl}}" class="action-row">
+      <button class="btn-outline" bindtap="retake">重拍</button>
+      <button class="btn-primary" bindtap="identify">🔍 开始识别</button>
+    </view>
+  </view>
+
+  <!-- 加载 -->
+  <view wx:if="{{loading}}" class="loading-box">
+    <view class="spinner"></view>
+    <text>AI 正在识别中...</text>
+  </view>
+
+  <!-- 错误 -->
+  <view wx:if="{{error}}" class="error-msg">{{error}}</view>
+
+  <!-- 结果卡片 -->
+  <view wx:if="{{result}}" class="result-card">
+    <view class="species-header">
+      <text class="species-name">{{result.species.name_cn}}</text>
+      <text class="species-latin">{{result.species.name_latin}}</text>
+    </view>
+
+    <view class="meta-grid">
+      <view class="meta-item">
+        <text class="meta-label">饲养难度</text>
+        <text class="meta-value">{{result.difficultyStars}}</text>
+      </view>
+      <view class="meta-item">
+        <text class="meta-label">科属</text>
+        <text class="meta-value">{{result.species.family}}</text>
+      </view>
+    </view>
+
+    <text class="desc-text">{{result.species.overview}}</text>
+
+    <!-- 饲养参数 -->
+    <view wx:if="{{result.careParams}}" class="care-grid">
+      <view wx:for="{{result.careParams}}" wx:key="label" class="care-item">
+        <text class="care-label">{{item.label}}</text>
+        <text class="care-value">{{item.value}}</text>
+      </view>
+    </view>
+
+    <!-- AI 置信度 -->
+    <view class="confidence">
+      识别置信度 <text class="text-gold">{{result.species.ai_confidence}}%</text>
+    </view>
+
+    <!-- 候选 -->
+    <view wx:if="{{result.candidates.length > 1}}" class="candidates">
+      <text class="section-title">其他可能：</text>
+      <view wx:for="{{result.candidates}}" wx:key="name_cn" wx:if="{{index > 0}}" class="cand-item">
+        <text>{{item.name_cn}}</text>
+        <text class="text-gold">{{item.confidence}}%</text>
+      </view>
+    </view>
+
+    <!-- 操作 -->
+    <view class="result-actions">
+      <button class="btn-primary" bindtap="viewDetail">📖 查看饲养指南</button>
+      <button class="btn-outline" open-type="share">📤 分享给龟友</button>
+      <button class="btn-outline" bindtap="retake">🔄 再识一只</button>
+    </view>
+  </view>
+</view>

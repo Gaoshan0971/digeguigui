@@ -1,0 +1,6 @@
+.br-title { font-size:18px; color:#d4a853; display:block; }
+.pair-row { display:flex; align-items:center; justify-content:center; gap:20px; padding:20px; }
+.pair-item { text-align:center; background:#132e1f; padding:16px; border-radius:12px; min-width:120px; }
+.pair-label { font-size:12px; color:#6a9a7a; display:block; margin-bottom:4px; }
+.pair-x { font-size:24px; color:#d4a853; }
+.off-item { padding:8px 0; border-bottom:1px solid #1a3a2a; color:#b0c8b8; font-size:14px; }

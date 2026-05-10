@@ -1,0 +1,29 @@
+<view class="page">
+  <view wx:if="{{species}}" class="card">
+    <text class="name">{{species.name_cn}}</text>
+    <text class="latin">{{species.name_latin}}</text>
+    <text class="diff">饲养难度: {{species.diffStars}}</text>
+    <text class="desc">{{species.overview}}</text>
+    
+    <view wx:if="{{species.traits}}" class="section">
+      <text class="stitle">识别特征</text>
+      <view wx:for="{{species.traits}}" wx:for-item="v" wx:for-index="k" class="trait-item">
+        <text class="trait-key">{{k}}</text><text class="trait-val">{{v}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{species.care_params}}" class="section">
+      <text class="stitle">饲养参数</text>
+      <view wx:for="{{species.care_params}}" wx:for-item="v" wx:for-index="k" class="care-row">
+        <text class="care-k">{{k}}</text><text class="care-v">{{v}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{collections && collections.length}}" class="section-title">该品种藏品</view>
+  <view class="thumb-grid">
+    <image wx:for="{{collections}}" wx:key="collection_id" wx:for-item="c"
+      src="{{c.image_urls[0]}}" mode="aspectFill" class="thumb"
+      bindtap="goCollection" data-id="{{c.collection_id}}" />
+  </view>
+</view>
