@@ -1,4 +1,17 @@
-.login-hint { color:#8ab89a; font-size:14px; }
-.my-name { font-size:20px; color:#d4a853; display:block; }
-.my-menu { margin:12px 16px; }
-.menu-item { display:flex; justify-content:space-between; padding:14px 0; border-bottom:1px solid #1a3a2a; color:#b0c8b8; font-size:15px; }
+.pg { min-height: 100vh; }
+.login-hero { display:flex; flex-direction:column; align-items:center; padding:80px 32px; }
+.login-icon { font-size: 64px; margin-bottom: 12px; }
+
+.profile-card {  }
+
+.menu-section {
+  margin: 12px 16px; background: var(--bg-card);
+  border-radius: var(--radius); overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.menu-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  font-size: 15px; color: var(--text);
+}
+.menu-item:last-child { border-bottom: none; }

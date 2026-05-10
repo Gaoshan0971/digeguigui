@@ -1,33 +1,55 @@
-<view class="page" wx:if="{{item}}">
-  <image wx:for="{{item.image_urls}}" wx:key="*this" src="{{item}}" mode="aspectFill" class="detail-img" />
+<view class="pg" wx:if="{{item}}">
+  <swiper wx:if="{{item.image_urls && item.image_urls.length}}" class="img-swiper" indicator-dots indicator-color="rgba(255,255,255,.3)" indicator-active-color="#B8956A">
+    <swiper-item wx:for="{{item.image_urls}}" wx:key="*this">
+      <image src="{{item}}" mode="aspectFill" class="swiper-img" />
+    </swiper-item>
+  </swiper>
+
   <view class="card">
-    <view class="flex-between">
-      <view>
-        <text class="d-name">{{item.species_name}}</text>
-        <text class="d-grade" wx:if="{{item.overall_grade}}">{{item.overall_grade}}</text>
+    <view class="flex-between mb-12">
+      <view class="flex-row gap-8">
+        <view class="avatar-sm"></view>
+        <view>
+          <text class="h3" style="display:block">{{item.nickname}}</text>
+          <text class="text-muted">{{item.species_name}}</text>
+        </view>
       </view>
-      <text bindtap="onLike">❤️ {{item.likes}}</text>
+      <view wx:if="{{item.overall_grade}}" class="grade-badge">{{item.overall_grade}}</view>
     </view>
-    <text class="d-cap" wx:if="{{item.caption}}">{{item.caption}}</text>
-    <view class="d-scores" wx:if="{{item.shell_score}}">
-      <text class="score">壳形 {{item.shell_score}}</text>
-      <text class="score">头纹 {{item.head_score}}</text>
-      <text class="score">色泽 {{item.color_score}}</text>
-      <text class="score">体型 {{item.body_score}}</text>
-      <text class="score">状态 {{item.health_score}}</text>
+    <text wx:if="{{item.caption}}" class="text-secondary" style="display:block;line-height:1.7">{{item.caption}}</text>
+
+    <!-- 品相打分 -->
+    <view wx:if="{{item.shell_score}}" class="score-row">
+      <view class="score-block"><text class="score-num">{{item.shell_score}}</text><text class="score-dim">壳形</text></view>
+      <view class="score-block"><text class="score-num">{{item.head_score}}</text><text class="score-dim">头纹</text></view>
+      <view class="score-block"><text class="score-num">{{item.color_score}}</text><text class="score-dim">色泽</text></view>
+      <view class="score-block"><text class="score-num">{{item.body_score}}</text><text class="score-dim">体型</text></view>
+      <view class="score-block"><text class="score-num">{{item.health_score}}</text><text class="score-dim">状态</text></view>
+    </view>
+
+    <view class="flex-between mt-12">
+      <text class="wf-likes" bindtap="onLike">❤️ {{item.likes || 0}} 赞</text>
+      <text class="text-muted">{{item.city}}</text>
     </view>
   </view>
 
+  <!-- 鉴赏评论 -->
   <view class="card">
-    <text class="stitle">鉴赏评论</text>
-    <view wx:for="{{appraisals}}" wx:key="appraisal_id" class="app-item">
-      <text class="app-user">{{item.nickname}}</text>
-      <text class="app-comment">{{item.comment}}</text>
+    <text class="section-title">💬 品相鉴赏</text>
+    <view wx:for="{{appraisals}}" wx:key="appraisal_id" class="appr-item">
+      <view class="flex-row gap-8">
+        <view class="avatar-sm"></view>
+        <view style="flex:1">
+          <text class="appr-user">{{item.nickname}}</text>
+          <text class="appr-text">{{item.comment}}</text>
+        </view>
+      </view>
     </view>
-    <view wx:if="{{!appraisals.length}}" class="text-muted">暂无鉴赏，来说两句</view>
+    <view wx:if="{{!appraisals.length}}" class="text-muted" style="text-align:center;padding:20px">暂无鉴赏，来说两句</view>
+
     <view class="comment-box">
-      <input value="{{comment}}" bindinput="onInput" placeholder="品相如何？" class="comment-input" />
-      <button bindtap="submitAppraisal" class="btn-primary" style="margin:8px 0">发表</button>
+      <input value="{{comment}}" bindinput="onInput" placeholder="品相如何？说说你的看法..." class="comment-inp" />
+      <button bindtap="submitAppraisal" class="btn-primary" style="margin:8px 0 0">发表鉴赏</button>
     </view>
   </view>
 </view>

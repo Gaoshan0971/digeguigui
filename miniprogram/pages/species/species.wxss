@@ -1,7 +1,0 @@
-.search-bar { padding: 12px 16px; }
-.search-input { background:#132e1f; border-radius:10px; padding:10px 14px; color:#e8e0c8; font-size:14px; }
-.species-grid { padding: 0 16px; }
-.species-card { background:#132e1f; border-radius:10px; padding:14px; margin-bottom:8px; border:1px solid #1a3a2a; }
-.sp-name { font-size:17px; color:#d4a853; font-weight:600; }
-.sp-latin { font-size:12px; color:#6a9a7a; margin-left:8px; }
-.sp-meta { margin-top:8px; display:flex; gap:6px; }

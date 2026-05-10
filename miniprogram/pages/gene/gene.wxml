@@ -1,0 +1,76 @@
+<!-- pages/gene/gene.wxml 基因 — 品种百科 + 血统 -->
+<view class="pg">
+  <!-- Header -->
+  <view class="gh">
+    <text class="gh-title">品种基因库</text>
+    <text class="gh-sub">370+ 龟种 · 品系图谱 · 血统溯源</text>
+  </view>
+
+  <!-- 搜索 -->
+  <view class="search-bar">
+    <text class="search-icon">🔍</text>
+    <input class="search-input" placeholder="搜索龟种..." bindinput="onSearch" />
+  </view>
+
+  <!-- 标签切换 -->
+  <view class="tab-row">
+    <view class="tab-item {{tab == 'species' ? 'active' : ''}}" bindtap="switchTab" data-tab="species">
+      <text>📚 品种百科</text>
+    </view>
+    <view class="tab-item {{tab == 'breeding' ? 'active' : ''}}" bindtap="switchTab" data-tab="breeding">
+      <text>🧬 血统记录</text>
+    </view>
+  </view>
+
+  <!-- 品种列表 -->
+  <view wx:if="{{tab == 'species'}}">
+    <view wx:if="{{loading}}" class="loading">
+      <view class="spinner"></view>
+    </view>
+
+    <view wx:for="{{speciesList}}" wx:key="species_id" class="species-card" bindtap="goSpecies" data-id="{{item.species_id}}">
+      <view class="sc-left">
+        <text class="sc-emoji">🐢</text>
+      </view>
+      <view class="sc-body">
+        <view class="flex-between">
+          <text class="sc-name">{{item.name_cn}}</text>
+          <text class="tag tag-gold">{{'⭐'.repeat(item.difficulty)}}</text>
+        </view>
+        <text class="sc-latin">{{item.name_latin}}</text>
+        <view class="sc-tags">
+          <text class="tag">{{item.family}}</text>
+        </view>
+      </view>
+      <text class="sc-arrow">›</text>
+    </view>
+
+    <view wx:if="{{!loading && !speciesList.length}}" class="empty-state">
+      <text class="icon">🔬</text>
+      <text class="title">暂无品种数据</text>
+    </view>
+  </view>
+
+  <!-- 血统列表 -->
+  <view wx:if="{{tab == 'breeding'}}">
+    <view wx:for="{{breedingList}}" wx:key="breeding_id" class="breeding-card card" bindtap="goBreeding" data-id="{{item.breeding_id}}">
+      <view class="flex-between mb-12">
+        <view class="flex-row gap-8">
+          <view class="avatar-sm"></view>
+          <view>
+            <text class="br-name">{{item.breeder_name}}</text>
+            <text class="text-muted">{{item.pairing_date}}</text>
+          </view>
+        </view>
+        <view class="br-count-badge">{{item.offspring_count}} 子代</view>
+      </view>
+      <text wx:if="{{item.notes}}" class="text-secondary">{{item.notes}}</text>
+    </view>
+
+    <view wx:if="{{!breedingList.length}}" class="empty-state">
+      <text class="icon">🧬</text>
+      <text class="title">暂无血统记录</text>
+      <text class="desc">繁育者将配对记录上链后，这里会展示完整的血统树</text>
+    </view>
+  </view>
+</view>

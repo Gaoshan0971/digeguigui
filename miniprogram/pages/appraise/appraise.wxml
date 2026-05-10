@@ -1,0 +1,35 @@
+<view class="pg">
+  <view class="ah">
+    <text class="ah-title">品鉴赏析</text>
+    <text class="ah-sub">壳形 · 头纹 · 色泽 · 体型 · 状态</text>
+  </view>
+
+  <view class="upload-float" bindtap="goUpload">
+    <text>+ 晒我的龟</text>
+  </view>
+
+  <view class="waterfall">
+    <view wx:for="{{list}}" wx:key="collection_id" class="wf-card" bindtap="goDetail" data-id="{{item.collection_id}}">
+      <image src="{{item.image_urls[0] || ''}}" mode="aspectFill" class="wf-img" />
+      <view class="wf-body">
+        <view class="flex-between">
+          <text class="wf-species">{{item.species_name}}</text>
+          <text class="wf-grade" wx:if="{{item.overall_grade}}">{{item.overall_grade}}</text>
+        </view>
+        <view class="flex-between mt-12">
+          <view class="flex-row gap-8">
+            <view class="avatar-sm"></view>
+            <text class="text-muted">{{item.nickname}}</text>
+          </view>
+          <text class="wf-likes">❤️ {{item.likes || 0}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{!list.length}}" class="empty-state">
+    <text class="icon">🏆</text>
+    <text class="title">还没有品鉴藏品</text>
+    <text class="desc">上传你的龟，让龟友来鉴赏品相</text>
+  </view>
+</view>

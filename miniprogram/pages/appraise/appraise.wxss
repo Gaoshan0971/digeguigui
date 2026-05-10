@@ -1,0 +1,27 @@
+.pg { padding-bottom: 30px; }
+.ah { text-align: center; padding: 32px 20px 16px; }
+.ah-title { font-size: 26px; font-weight: 800; color: var(--text); display: block; }
+.ah-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; display: block; }
+
+.upload-float {
+  position: sticky; top: 8px; z-index: 10;
+  margin: 0 16px; padding: 12px 20px;
+  background: var(--bg-card); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md); text-align: center;
+  color: var(--gold); font-size: 14px; font-weight: 600;
+}
+
+.waterfall { padding: 12px; display: flex; flex-wrap: wrap; }
+.wf-card {
+  width: calc(50% - 10px); margin: 5px;
+  background: var(--bg-card); border-radius: var(--radius-sm);
+  overflow: hidden; box-shadow: var(--shadow-sm);
+}
+.wf-img { width: 100%; aspect-ratio: 1; background: var(--bg); }
+.wf-body { padding: 10px; }
+.wf-species { font-size: 14px; font-weight: 600; color: var(--text); }
+.wf-grade {
+  font-size: 12px; font-weight: 700; color: var(--gold);
+  background: var(--gold-bg); padding: 2px 8px; border-radius: 4px;
+}
+.wf-likes { font-size: 12px; color: var(--text-muted); }

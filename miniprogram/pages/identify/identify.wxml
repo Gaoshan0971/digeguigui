@@ -1,82 +1,126 @@
-<!-- pages/identify/identify.wxml — 拍照识龟 -->
+<!-- pages/identify/identify.wxml 拍照识龟 -->
 <view class="page">
-  <!-- 相机区 -->
-  <view class="camera-box">
-    <camera wx:if="{{!previewUrl}}" device-position="back" flash="off" binderror="onCameraError" style="width:100%;height:100%">
-      <view class="camera-hint" wx:if="{{!cameraReady}}">
-        <text class="camera-icon">📸</text>
-        <text>点击下方拍照</text>
-      </view>
-    </camera>
-    <image wx:if="{{previewUrl}}" src="{{previewUrl}}" mode="aspectFill" class="preview-img" />
+  <!-- Hero 区 -->
+  <view class="hero">
+    <text class="hero-icon">🐢</text>
+    <text class="hero-title">拍照识龟</text>
+    <text class="hero-sub">拍一张，认识你的龟</text>
   </view>
 
-  <!-- 操作区 -->
-  <view wx:if="{{!loading && !result}}">
-    <button wx:if="{{!previewUrl}}" class="btn-primary" bindtap="takePhoto">📷 拍照识别</button>
-    <view wx:if="{{!previewUrl}}" class="upload-btn" bindtap="choosePhoto">🖼️ 从相册选择</view>
-    <view wx:if="{{previewUrl}}" class="action-row">
+  <!-- 相机预览区 -->
+  <view class="camera-stage {{previewUrl ? 'has-photo' : ''}}">
+    <camera wx:if="{{!previewUrl}}" device-position="back" flash="off" style="width:100%;height:100%">
+      <view class="camera-overlay">
+        <view class="scan-frame">
+          <view class="scan-corner tl"></view><view class="scan-corner tr"></view>
+          <view class="scan-corner bl"></view><view class="scan-corner br"></view>
+        </view>
+      </view>
+    </camera>
+    <image wx:if="{{previewUrl}}" src="{{previewUrl}}" mode="aspectFill" class="preview-full" />
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="action-area" wx:if="{{!loading && !result}}">
+    <button class="btn-primary" wx:if="{{!previewUrl}}" bindtap="takePhoto">
+      <text>📷 拍照识别</text>
+    </button>
+    <view class="action-row" wx:if="{{previewUrl}}">
       <button class="btn-outline" bindtap="retake">重拍</button>
-      <button class="btn-primary" bindtap="identify">🔍 开始识别</button>
+      <button class="btn-primary" bindtap="identify" style="margin:0">🔍 开始识别</button>
+    </view>
+    <view class="upload-link" wx:if="{{!previewUrl}}" bindtap="choosePhoto">
+      <text>🖼️ 从相册选择</text>
     </view>
   </view>
 
   <!-- 加载 -->
-  <view wx:if="{{loading}}" class="loading-box">
+  <view wx:if="{{loading}}" class="loading">
     <view class="spinner"></view>
     <text>AI 正在识别中...</text>
+    <text class="text-muted">分析品种特征、匹配百科数据</text>
   </view>
 
   <!-- 错误 -->
-  <view wx:if="{{error}}" class="error-msg">{{error}}</view>
+  <view wx:if="{{error}}" class="error-toast">
+    <text>😅 {{error}}</text>
+  </view>
 
-  <!-- 结果卡片 -->
-  <view wx:if="{{result}}" class="result-card">
-    <view class="species-header">
-      <text class="species-name">{{result.species.name_cn}}</text>
-      <text class="species-latin">{{result.species.name_latin}}</text>
+  <!-- ===== 结果卡片 ===== -->
+  <view wx:if="{{result && result.species}}" class="result-section">
+    <!-- 品种头 -->
+    <view class="result-hero">
+      <view class="result-badge">
+        <text class="badge-conf">{{result.species.ai_confidence}}%</text>
+        <text class="badge-label">置信度</text>
+      </view>
+      <text class="result-name">{{result.species.name_cn}}</text>
+      <text class="result-latin">{{result.species.name_latin}}</text>
     </view>
 
-    <view class="meta-grid">
-      <view class="meta-item">
-        <text class="meta-label">饲养难度</text>
-        <text class="meta-value">{{result.difficultyStars}}</text>
+    <!-- 信息条 -->
+    <view class="info-strip">
+      <view class="info-item">
+        <text class="info-icon">{{result.difficultyStars || '⭐'}}</text>
+        <text class="info-label">饲养难度</text>
       </view>
-      <view class="meta-item">
-        <text class="meta-label">科属</text>
-        <text class="meta-value">{{result.species.family}}</text>
+      <view class="info-divider"></view>
+      <view class="info-item">
+        <text class="info-icon">📚</text>
+        <text class="info-label">{{result.species.family || '未知'}}</text>
       </view>
     </view>
 
-    <text class="desc-text">{{result.species.overview}}</text>
+    <!-- 简介 -->
+    <view class="card">
+      <text class="overview-text">{{result.species.overview}}</text>
+    </view>
 
     <!-- 饲养参数 -->
-    <view wx:if="{{result.careParams}}" class="care-grid">
-      <view wx:for="{{result.careParams}}" wx:key="label" class="care-item">
-        <text class="care-label">{{item.label}}</text>
-        <text class="care-value">{{item.value}}</text>
+    <view class="card" wx:if="{{result.careParams}}">
+      <text class="section-title">📋 饲养参数</text>
+      <view class="param-grid">
+        <view wx:for="{{result.careParams}}" wx:key="label" class="param-cell">
+          <text class="param-label">{{item.label}}</text>
+          <text class="param-value">{{item.value}}</text>
+        </view>
       </view>
     </view>
 
-    <!-- AI 置信度 -->
-    <view class="confidence">
-      识别置信度 <text class="text-gold">{{result.species.ai_confidence}}%</text>
-    </view>
-
-    <!-- 候选 -->
-    <view wx:if="{{result.candidates.length > 1}}" class="candidates">
-      <text class="section-title">其他可能：</text>
-      <view wx:for="{{result.candidates}}" wx:key="name_cn" wx:if="{{index > 0}}" class="cand-item">
-        <text>{{item.name_cn}}</text>
-        <text class="text-gold">{{item.confidence}}%</text>
+    <!-- 其他候选 -->
+    <view class="card" wx:if="{{result.candidates.length > 1}}">
+      <text class="section-title">🔍 其他可能性</text>
+      <view wx:for="{{result.candidates}}" wx:key="name_cn" wx:if="{{index > 0}}" class="candidate-row">
+        <text class="cand-name">{{item.name_cn}}</text>
+        <view class="cand-bar-bg">
+          <view class="cand-bar-fill" style="width:{{item.confidence}}%"></view>
+        </view>
+        <text class="cand-pct">{{item.confidence}}%</text>
       </view>
     </view>
 
     <!-- 操作 -->
     <view class="result-actions">
-      <button class="btn-primary" bindtap="viewDetail">📖 查看饲养指南</button>
+      <button class="btn-primary" bindtap="viewDetail">📖 查看完整饲养指南</button>
       <button class="btn-outline" open-type="share">📤 分享给龟友</button>
-      <button class="btn-outline" bindtap="retake">🔄 再识一只</button>
+      <view class="retake-link" bindtap="retake">再识一只 →</view>
     </view>
   </view>
+
+  <!-- 未识别到 -->
+  <view wx:if="{{result && !result.species}}" class="card" style="text-align:center">
+    <text style="font-size:40px;display:block;margin-bottom:12px">🤔</text>
+    <text class="h3">未能准确识别</text>
+    <text class="text-secondary" style="display:block;margin-top:8px">请确保龟体完整可见、光线充足</text>
+    <view wx:if="{{result.candidates}}" class="mt-12">
+      <text class="text-muted">可能是：</text>
+      <view wx:for="{{result.candidates}}" wx:key="name_cn" class="candidate-row">
+        <text class="cand-name">{{item.name_cn}}</text>
+        <text class="cand-pct">{{item.confidence}}%</text>
+      </view>
+    </view>
+    <button class="btn-outline" bindtap="retake" style="margin-top:16px">再试一次</button>
+  </view>
+
+  <view style="height:40px"></view>
 </view>

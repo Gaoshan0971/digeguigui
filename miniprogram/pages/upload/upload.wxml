@@ -1,14 +1,20 @@
-<view class="page">
+<view class="pg">
+  <view class="uh">
+    <text class="uh-title">晒我的龟</text>
+  </view>
   <view class="img-box" bindtap="chooseImage">
     <image wx:if="{{imgUrl}}" src="{{imgUrl}}" mode="aspectFill" class="up-img" />
-    <text wx:else class="img-placeholder">📸 选择图片</text>
+    <view wx:else class="img-placeholder">
+      <text style="font-size:40px">📸</text>
+      <text class="text-muted">点击选择图片</text>
+    </view>
   </view>
   <view class="card">
     <picker mode="selector" range="{{speciesList}}" range-key="name_cn" bindchange="onSpeciesChange">
-      <view class="picker-row"><text>品种</text><text class="text-gold">{{speciesList[0] ? '请选择' : '加载中...'}}</text></view>
+      <view class="picker-row"><text>品种</text><text class="text-gold">选择品种 ›</text></view>
     </picker>
     <input placeholder="描述你的龟..." value="{{caption}}" bindinput="e=>this.setData({caption:e.detail.value})" class="inp" />
     <input placeholder="所在城市" value="{{city}}" bindinput="e=>this.setData({city:e.detail.value})" class="inp" />
   </view>
-  <button class="btn-primary" bindtap="submit">发布</button>
+  <button class="btn-primary" bindtap="submit">发布到品鉴墙</button>
 </view>
