@@ -1,10 +1,4 @@
 node_modules/
-.env
-*.db
-*.db-shm
-*.db-wal
-*.pem
-*.key
-*.p12
-*.pfx
 data/
+*.db
+.env

@@ -1,0 +1,13 @@
+{
+  "name": "digeguigui-server",
+  "version": "0.1.0",
+  "description": "滴个龟龟 — 龟类识别+饲养+品相+血统 API",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0"
+  }
+}
