@@ -38,6 +38,7 @@ require('./routes/species').register(app);
 require('./routes/collections').register(app);
 require('./routes/appraisals').register(app);
 require('./routes/breedings').register(app);
+require('./routes/identify').register(app);
 
 // 注册用户路由
 app.post('/api/users/login', (req, res) => {

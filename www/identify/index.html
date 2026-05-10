@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<meta property="og:title" content="滴个龟龟 - 拍照识龟">
+<meta property="og:description" content="拍一张，认识你的龟 🐢">
+<meta property="og:image" content="https://digeguigui.com/identify/share-card.png">
+<title>拍照识龟 - 滴个龟龟</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1a3a2a;color:#e8e0c8;min-height:100vh;overflow-x:hidden}
+.container{max-width:480px;margin:0 auto;padding:20px}
+
+/* Top bar */
+.top-bar{text-align:center;padding:30px 0 20px}
+.top-bar h1{font-size:28px;color:#d4a853;letter-spacing:2px}
+.top-bar .sub{font-size:13px;color:#8ab89a;margin-top:6px}
+
+/* Camera area */
+.camera-box{position:relative;background:#0d2518;border-radius:16px;overflow:hidden;aspect-ratio:1;margin-bottom:16px;border:2px solid #2a5a3a}
+.camera-box video{width:100%;height:100%;object-fit:cover}
+.camera-box canvas{display:none}
+.camera-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#4a7a5a}
+.camera-placeholder .icon{font-size:64px;margin-bottom:12px}
+.camera-placeholder .hint{font-size:14px}
+
+/* Preview overlay */
+.preview-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;flex-direction:column}
+.preview-overlay img{max-width:90%;max-height:70%;border-radius:8px}
+.preview-overlay .actions{margin-top:16px;display:flex;gap:12px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 28px;border-radius:12px;border:none;font-size:16px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:#d4a853;color:#1a3a2a}
+.btn-primary:active{background:#c49a43;transform:scale(.97)}
+.btn-outline{background:transparent;color:#d4a853;border:2px solid #d4a853}
+.btn-outline:active{background:rgba(212,168,83,.1)}
+.btn-full{width:100%}
+.btn-sm{padding:8px 20px;font-size:14px}
+
+/* Upload */
+.upload-area{margin-bottom:16px}
+.upload-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;background:#0d2518;border:2px dashed #2a5a3a;border-radius:12px;color:#8ab89a;font-size:14px;cursor:pointer}
+.upload-btn:active{background:#132e1f}
+.file-input{display:none}
+
+/* Result card */
+.result-card{display:none;background:#0d2518;border-radius:16px;padding:20px;margin-bottom:16px;border:1px solid #2a5a3a}
+.result-card .species-name{font-size:22px;color:#d4a853;font-weight:700}
+.result-card .species-latin{font-size:13px;color:#6a9a7a;margin-bottom:12px}
+.result-card .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.result-card .meta-item{background:#132e1f;padding:10px;border-radius:8px}
+.result-card .meta-label{font-size:11px;color:#6a9a7a}
+.result-card .meta-value{font-size:15px;color:#e8e0c8;font-weight:600}
+.result-card .desc{font-size:14px;color:#b0c8b8;line-height:1.6;margin-bottom:16px}
+.result-card .candidates{margin-top:12px}
+.result-card .cand-item{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1a3a2a;font-size:14px;color:#8ab89a}
+.result-card .cand-item .conf{color:#d4a853;font-size:12px}
+
+/* Share */
+.share-section{display:none;text-align:center;padding:10px 0}
+
+/* Loading */
+.loading{display:none;text-align:center;padding:30px}
+.loading .spinner{width:40px;height:40px;border:3px solid #2a5a3a;border-top-color:#d4a853;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Error */
+.error-msg{display:none;background:#3a1a1a;color:#e8a0a0;padding:12px;border-radius:8px;margin-bottom:16px;font-size:14px;text-align:center}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="top-bar">
+    <h1>🐢 滴个龟龟</h1>
+    <div class="sub">拍照 · 识龟 · 懂龟</div>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <!-- 相机/预览区 -->
+  <div class="camera-box" id="cameraBox">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
+    <div class="camera-placeholder" id="placeholder">
+      <div class="icon">📸</div>
+      <div class="hint">点击下方拍照或上传图片</div>
+    </div>
+    <div class="preview-overlay" id="preview">
+      <img id="previewImg" src="" alt="预览">
+      <div class="actions">
+        <button class="btn btn-outline btn-sm" onclick="retake()">重拍</button>
+        <button class="btn btn-primary btn-sm" onclick="identify()">识 别</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 操作按钮 -->
+  <button class="btn btn-primary btn-full" id="captureBtn" onclick="capture()">📷 拍照</button>
+  <div class="upload-area">
+    <label class="upload-btn" for="fileInput">🖼️ 从相册选择</label>
+    <input type="file" accept="image/*" class="file-input" id="fileInput" onchange="handleFile(this)">
+  </div>
+
+  <!-- 加载 -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div style="color:#8ab89a">AI 正在识别中...</div>
+  </div>
+
+  <!-- 识别结果 -->
+  <div class="result-card" id="resultCard"></div>
+
+  <!-- 分享 -->
+  <div class="share-section" id="shareSection">
+    <button class="btn btn-primary btn-full" onclick="shareResult()">📤 分享给龟友</button>
+    <div style="margin-top:8px;font-size:12px;color:#6a9a7a">
+      识龟结果已生成，分享到朋友圈让更多人认识你的龟！
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = 'https://api.digeguigui.com';
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let currentImageData = null;
+let stream = null;
+
+// 启动摄像头
+async function startCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 720 }, height: { ideal: 720 } }
+    });
+    video.srcObject = stream;
+    document.getElementById('placeholder').style.display = 'none';
+  } catch(e) {
+    document.getElementById('placeholder').innerHTML =
+      '<div class="icon">🖼️</div><div class="hint">无法访问摄像头<br>请使用相册上传</div>';
+  }
+}
+
+function capture() {
+  if (!stream) return alert('请允许摄像头权限，或使用相册上传');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video, 0, 0);
+  showPreview(canvas.toDataURL('image/jpeg', 0.9));
+}
+
+function handleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => showPreview(e.target.result);
+  reader.readAsDataURL(file);
+}
+
+function showPreview(dataUrl) {
+  currentImageData = dataUrl;
+  document.getElementById('previewImg').src = dataUrl;
+  document.getElementById('preview').style.display = 'flex';
+  document.getElementById('captureBtn').style.display = 'none';
+  document.getElementById('placeholder').style.display = 'none';
+}
+
+function retake() {
+  document.getElementById('preview').style.display = 'none';
+  document.getElementById('captureBtn').style.display = 'block';
+  if (!stream) document.getElementById('placeholder').style.display = 'flex';
+  currentImageData = null;
+  document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('shareSection').style.display = 'none';
+  document.getElementById('errorMsg').style.display = 'none';
+}
+
+async function identify() {
+  if (!currentImageData) return;
+
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('shareSection').style.display = 'none';
+  document.getElementById('errorMsg').style.display = 'none';
+
+  try {
+    const result = await fetch(API + '/api/identify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_base64: currentImageData })
+    });
+
+    if (!result.ok) throw new Error('识别失败');
+
+    const data = await result.json();
+    if (!data.ok) throw new Error(data.error || '识别失败');
+
+    showResult(data.data);
+  } catch(e) {
+    document.getElementById('errorMsg').style.display = 'block';
+    document.getElementById('errorMsg').textContent = '识别失败: ' + e.message;
+  } finally {
+    document.getElementById('loading').style.display = 'none';
+  }
+}
+
+function showResult(data) {
+  const card = document.getElementById('resultCard');
+  let html = '';
+
+  if (data.species) {
+    const s = data.species;
+    html += `<div class="species-name">${s.name_cn}</div>`;
+    html += `<div class="species-latin">${s.name_latin}</div>`;
+    html += `<div class="meta">`;
+    html += `<div class="meta-item"><div class="meta-label">饲养难度</div><div class="meta-value">${'⭐'.repeat(s.difficulty||1)}</div></div>`;
+    html += `<div class="meta-item"><div class="meta-label">科属</div><div class="meta-value">${s.family||'未知'}</div></div>`;
+    html += `</div>`;
+    html += `<div class="desc">${s.overview||''}</div>`;
+
+    // 饲养参数
+    if (s.care_params) {
+      html += `<div class="meta" style="margin-top:8px">`;
+      const care = typeof s.care_params === 'string' ? JSON.parse(s.care_params) : s.care_params;
+      for (const [k,v] of Object.entries(care)) {
+        html += `<div class="meta-item"><div class="meta-label">${k}</div><div class="meta-value" style="font-size:13px">${v}</div></div>`;
+      }
+      html += `</div>`;
+    }
+  }
+
+  // 候选列表
+  if (data.candidates && data.candidates.length > 1) {
+    html += `<div class="candidates"><div style="font-size:13px;color:#6a9a7a;margin-bottom:6px">其他可能：</div>`;
+    data.candidates.slice(1).forEach(c => {
+      html += `<div class="cand-item"><span>${c.name_cn}</span><span class="conf">${Math.round(c.confidence)}%</span></div>`;
+    });
+    html += `</div>`;
+  }
+
+  // 如果没有匹配到品种
+  if (!data.species) {
+    const top = data.candidates && data.candidates[0];
+    html += `<div class="species-name">${top ? top.name_cn : '未能识别'}</div>`;
+    html += `<div class="species-latin">${top && top.name_latin ? top.name_latin : '请尝试更清晰的照片'}</div>`;
+    html += `<div class="desc">AI 暂未匹配到确定品种，请确保照片清晰、龟体完整可见。也可以上传到社区请龟友帮忙鉴定！</div>`;
+    if (data.candidates) {
+      html += `<div class="candidates"><div style="font-size:13px;color:#6a9a7a;margin-bottom:6px">可能是：</div>`;
+      data.candidates.forEach(c => {
+        html += `<div class="cand-item"><span>${c.name_cn}</span><span class="conf">${Math.round(c.confidence)}%</span></div>`;
+      });
+      html += `</div>`;
+    }
+  }
+
+  card.innerHTML = html;
+  card.style.display = 'block';
+  document.getElementById('shareSection').style.display = 'block';
+
+  // 滚动到结果
+  card.scrollIntoView({ behavior: 'smooth' });
+}
+
+function shareResult() {
+  if (navigator.share) {
+    navigator.share({
+      title: '滴个龟龟 - 拍照识龟',
+      text: '我用滴个龟龟认识了一只新龟！🐢',
+      url: window.location.href
+    });
+  } else {
+    // 微信分享提示
+    alert('点击右上角 ··· 分享给龟友！');
+  }
+}
+
+// 启动
+startCamera();
+</script>
+</body>
+</html>

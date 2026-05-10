@@ -2,3 +2,13 @@ node_modules/
 data/
 *.db
 .env
+
+# SSL 证书和密钥 — 不提交到 Git
+DigeguiguiID/digeguiguissl/
+DigeguiguiID/dageguigui.pem
+DigeguiguiID/*.key
+*.pem
+*.key
+
+# 敏感信息文件
+DigeguiguiID/*腾讯云*.txt
