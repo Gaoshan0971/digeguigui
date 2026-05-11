@@ -9,8 +9,8 @@ function register(app) {
     if (!image_base64) return res.status(400).json({ ok: false, error: '请上传图片' });
 
     try {
-      // 调用 DeepSeek Vision API
-      const result = await callDeepSeekVision(image_base64);
+      // 调用混元视觉模型识别
+      const result = await callHunyuanVision(image_base64);
       // 匹配本地品种数据
       const enriched = await enrichWithSpeciesDB(result);
       res.json({ ok: true, data: enriched });
@@ -21,11 +21,11 @@ function register(app) {
   });
 }
 
-// ========== DeepSeek Vision API ==========
+// ========== 腾讯混元视觉 API ==========
 
-const DEEPSEEK_KEY = 'sk-aa7b869018b640fca4be1c445a298393';
+const HUNYUAN_KEY = 'sk-9W9gW9vKBlRumlofaDl3g104nKh8iTsQVrhzirEx2lo2lGvU';
 
-async function callDeepSeekVision(base64Image) {
+async function callHunyuanVision(base64Image) {
   // 去掉 data:image/...;base64, 前缀
   const pureBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
 
@@ -47,14 +47,14 @@ async function callDeepSeekVision(base64Image) {
 
 目前数据库中有以下54个龟种可供参考：巴西龟、花龟、草龟、东锦龟、中华鳖、剃刀蛋龟、四爪陆龟、圆澳龟、地中海陆龟、地图龟、安布闭壳龟、巨头蛋龟、希拉里侧颈龟、斑点池龟、果核蛋龟、珍珠鳖、白唇蛋龟、红腿陆龟、红面蛋龟、缅甸陆龟、缘翘陆龟、虎纹蛋龟、蛇颈龟、西锦龟、赫曼陆龟、黄喉拟水龟、齿缘龟、东部箱龟、佛罗里达鳖、印度星龟、墨西哥蛋龟、枫叶龟、猪鼻龟、窄桥蛋龟、缅甸星龟、萨尔文蛋龟、豹纹陆龟、辐射陆龟、金钱龟、钻纹龟、锯缘摄龟、鳄龟、黄头侧颈龟、黄缘闭壳龟、黄腿陆龟、大鳄龟、枯叶龟、苏卡达陆龟、靴脚陆龟、饼干陆龟、鹰嘴龟、黄额闭壳龟、黑靴陆龟、亚达伯拉象龟。如果是其他品种也请正常识别。`;
 
-  const resp = await fetch('https://api.deepseek.com/v1/chat/completions', {
+  const resp = await fetch('https://api.hunyuan.cloud.tencent.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${DEEPSEEK_KEY}`
+      'Authorization': `Bearer ${HUNYUAN_KEY}`
     },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: 'hunyuan-turbos-vision',
       messages: [{
         role: 'user',
         content: [
@@ -69,7 +69,7 @@ async function callDeepSeekVision(base64Image) {
 
   if (!resp.ok) {
     const err = await resp.text();
-    throw new Error(`DeepSeek API error ${resp.status}: ${err}`);
+    throw new Error(`混元 API error ${resp.status}: ${err}`);
   }
 
   const data = await resp.json();
