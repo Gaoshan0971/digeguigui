@@ -113,6 +113,20 @@ db.exec(`
     UNIQUE(target_type, target_id, user_id)
   );
 
+  -- 数据集标注提交
+  CREATE TABLE IF NOT EXISTS dataset_submissions (
+    submission_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    species_name TEXT NOT NULL,
+    species_id INTEGER,
+    image_base64 TEXT NOT NULL,
+    submitter_name TEXT DEFAULT '',
+    status TEXT DEFAULT 'pending',        -- pending | approved | rejected
+    reviewer_notes TEXT DEFAULT '',
+    reviewed_at TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (species_id) REFERENCES species(species_id)
+  );
+
   -- 索引
   CREATE INDEX IF NOT EXISTS idx_collections_user ON collections(user_id);
   CREATE INDEX IF NOT EXISTS idx_collections_species ON collections(species_id);

@@ -39,6 +39,7 @@ require('./routes/collections').register(app);
 require('./routes/appraisals').register(app);
 require('./routes/breedings').register(app);
 require('./routes/identify').register(app);
+require('./routes/dataset').register(app);
 
 // 注册用户路由
 app.post('/api/users/login', (req, res) => {
@@ -137,6 +138,10 @@ function handleRequest(req, res) {
   const match = matchRoute(req.method, req.url);
 
   if (!match) {
+    // 尝试静态文件
+    if (req.method === 'GET') {
+      return serveStatic(req, res);
+    }
     return send(res, 404, { ok: false, error: 'Not Found' });
   }
 
@@ -145,6 +150,50 @@ function handleRequest(req, res) {
   req.params = match.params;
   match.handler(req, res);
   req.params = origParams;
+}
+
+// 静态文件服务
+const fs = require('fs');
+const path = require('path');
+const WWW = path.join(__dirname, '..', 'www');
+
+function serveStatic(req, res) {
+  let filePath = req.url.split('?')[0];
+  if (filePath === '/') filePath = '/index.html';
+  // 默认走 dataset 页
+  if (filePath === '/dataset' || filePath === '/dataset/') filePath = '/dataset/index.html';
+  
+  const fullPath = path.join(WWW, filePath);
+  
+  // 安全检查：防止目录穿越
+  if (!fullPath.startsWith(WWW)) {
+    return send(res, 403, { ok: false, error: 'Forbidden' });
+  }
+  
+  try {
+    const stat = fs.statSync(fullPath);
+    if (stat.isFile()) {
+      const ext = path.extname(fullPath).toLowerCase();
+      const mime = {
+        '.html': 'text/html; charset=utf-8',
+        '.css': 'text/css',
+        '.js': 'application/javascript',
+        '.json': 'application/json',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.svg': 'image/svg+xml',
+        '.ico': 'image/x-icon',
+      }[ext] || 'application/octet-stream';
+      
+      res.writeHead(200, { 'Content-Type': mime });
+      res.end(fs.readFileSync(fullPath));
+    } else {
+      send(res, 404, { ok: false, error: 'Not Found' });
+    }
+  } catch {
+    send(res, 404, { ok: false, error: 'Not Found' });
+  }
 }
 
 function send(res, status, data) {

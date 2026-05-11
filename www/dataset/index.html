@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>滴个龟龟 · 数据标注</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#F7F4EF;color:#2C2416;min-height:100vh}
+.header{background:linear-gradient(135deg,#B8956A,#A0784C);color:#fff;padding:20px;text-align:center}
+.header h1{font-size:22px;font-weight:600}
+.header p{font-size:13px;opacity:.85;margin-top:4px}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #e8e0d5}
+.tab{flex:1;text-align:center;padding:14px;font-size:15px;cursor:pointer;color:#A09080;border-bottom:2px solid transparent;transition:.2s}
+.tab.active{color:#B8956A;border-bottom-color:#B8956A;font-weight:600}
+.container{padding:16px;max-width:500px;margin:0 auto}
+.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.card h3{font-size:16px;color:#B8956A;margin-bottom:12px}
+label{display:block;font-size:13px;color:#666;margin-bottom:6px}
+select,input[type=text],textarea{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:15px;background:#fafaf7;margin-bottom:12px;outline:none}
+select:focus,input:focus{border-color:#B8956A}
+.upload-zone{border:2px dashed #d4c5a9;border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:.2s;margin-bottom:12px}
+.upload-zone:active,.upload-zone.dragover{background:#faf6ef;border-color:#B8956A}
+.upload-zone .icon{font-size:40px;margin-bottom:8px}
+.upload-zone .hint{font-size:13px;color:#999}
+.preview{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.preview img{width:80px;height:80px;object-fit:cover;border-radius:8px;border:2px solid #e8e0d5}
+.btn{display:block;width:100%;padding:14px;font-size:16px;font-weight:600;border:none;border-radius:12px;cursor:pointer;transition:.2s}
+.btn-primary{background:linear-gradient(135deg,#B8956A,#A0784C);color:#fff;box-shadow:0 4px 12px rgba(184,149,106,.3)}
+.btn-primary:active{transform:scale(.98)}
+.btn-sm{padding:8px 16px;font-size:13px;display:inline-block;width:auto;margin:4px}
+.btn-approve{background:#4CAF50;color:#fff}
+.btn-reject{background:#f44336;color:#fff}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#2C2416;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;z-index:999;opacity:0;transition:.3s}
+.toast.show{opacity:1}
+.submission-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f0ebe0}
+.submission-item:last-child{border-bottom:none}
+.submission-item img{width:64px;height:64px;object-fit:cover;border-radius:8px}
+.submission-item .info{flex:1;min-width:0}
+.submission-item .info .species{font-weight:600;font-size:14px}
+.submission-item .info .meta{font-size:12px;color:#999;margin-top:2px}
+.submission-item .actions{display:flex;gap:6px;flex-shrink:0}
+.empty{text-align:center;padding:40px 0;color:#999;font-size:14px}
+.stats{display:flex;gap:12px;margin-bottom:16px}
+.stat{flex:1;text-align:center;background:#fff;border-radius:12px;padding:16px 8px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.stat .num{font-size:28px;font-weight:700;color:#B8956A}
+.stat .label{font-size:12px;color:#999;margin-top:4px}
+.admin-only{display:none}
+.admin-mode .admin-only{display:block}
+.admin-mode .public-only{display:none}
+.hidden{display:none}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🐢 滴个龟龟 · 数据标注</h1>
+  <p>上传龟类图片，帮我们训练识龟AI</p>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('submit')">📤 提交标注</div>
+  <div class="tab" onclick="switchTab('review')">📋 审核管理</div>
+</div>
+
+<div class="container">
+
+  <!-- ============ 提交区 ============ -->
+  <div id="tab-submit">
+    <div class="card">
+      <h3>📸 上传龟类图片</h3>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+        <div class="icon">🐢</div>
+        <div class="hint">点击或拖拽上传图片<br>支持 JPG / PNG，单张 ≤ 10MB</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files)">
+      <div class="preview" id="preview"></div>
+      
+      <label>🐢 品种</label>
+      <select id="speciesSelect"></select>
+      
+      <label>👤 你的昵称（选填）</label>
+      <input type="text" id="submitterName" placeholder="方便联系你发放奖励" maxlength="20">
+      
+      <button class="btn btn-primary" onclick="submitAll()">提交标注</button>
+    </div>
+  </div>
+
+  <!-- ============ 审核区 ============ -->
+  <div id="tab-review" class="hidden">
+    <div class="card admin-only">
+      <h3>🔑 管理员验证</h3>
+      <input type="password" id="adminKey" placeholder="输入管理密钥" onkeydown="if(event.key==='Enter')loadSubmissions()">
+      <button class="btn btn-primary btn-sm" onclick="loadSubmissions()">进入审核</button>
+    </div>
+    
+    <div id="reviewContent" class="hidden">
+      <div class="stats" id="statsBar"></div>
+      <div class="card">
+        <h3>📋 待审核 (<span id="pendingCount">0</span>)</h3>
+        <div id="submissionList"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '/api/dataset';
+let currentTab = 'submit';
+let adminKey = '';
+let selectedFiles = [];
+
+// 初始化
+loadSpecies();
+
+// 标签切换
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', (i===0 && tab==='submit') || (i===1 && tab==='review'));
+  });
+  document.getElementById('tab-submit').classList.toggle('hidden', tab !== 'submit');
+  document.getElementById('tab-review').classList.toggle('hidden', tab !== 'review');
+}
+
+// 加载品种列表
+async function loadSpecies() {
+  const res = await fetch(API+'/species');
+  const data = await res.json();
+  const sel = document.getElementById('speciesSelect');
+  sel.innerHTML = '<option value="">请选择品种</option>';
+  if (data.ok) {
+    data.data.forEach(s => {
+      sel.innerHTML += `<option value="${s.name_cn}">${s.name_cn} (${s.family})</option>`;
+    });
+  }
+}
+
+// 文件处理
+function handleFiles(files) {
+  for (const f of files) {
+    if (!f.type.startsWith('image/')) continue;
+    if (f.size > 10*1024*1024) { toast('图片太大，请压缩后上传'); continue; }
+    selectedFiles.push(f);
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.title = f.name;
+      img.onclick = () => { img.remove(); selectedFiles = selectedFiles.filter(x => x !== f); };
+      document.getElementById('preview').appendChild(img);
+    };
+    reader.readAsDataURL(f);
+  }
+}
+
+// 拖拽上传
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+
+// 批量提交
+async function submitAll() {
+  const species = document.getElementById('speciesSelect').value;
+  const name = document.getElementById('submitterName').value.trim();
+  if (!species) return toast('请选择品种');
+  if (selectedFiles.length === 0) return toast('请选择图片');
+  
+  let ok = 0, fail = 0;
+  for (const f of selectedFiles) {
+    const b64 = await fileToBase64(f);
+    const res = await fetch(API+'/submit', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ species_name: species, image_base64: b64, submitter_name: name })
+    });
+    const d = await res.json();
+    d.ok ? ok++ : fail++;
+  }
+  toast(`✅ 提交完成！成功 ${ok} 张，失败 ${fail} 张`);
+  selectedFiles = []; document.getElementById('preview').innerHTML = '';
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+// ========= 审核功能 =========
+async function loadSubmissions() {
+  adminKey = document.getElementById('adminKey').value.trim();
+  if (!adminKey) return toast('请输入管理密钥');
+  
+  const res = await fetch(API+'/submissions?admin_key='+adminKey+'&status=pending&limit=50');
+  const data = await res.json();
+  if (!data.ok) return toast('❌ ' + data.error);
+  
+  document.getElementById('reviewContent').classList.remove('hidden');
+  document.getElementById('pendingCount').textContent = data.data.total;
+  
+  const list = document.getElementById('submissionList');
+  if (data.data.list.length === 0) {
+    list.innerHTML = '<div class="empty">🎉 没有待审核的提交</div>';
+  } else {
+    list.innerHTML = data.data.list.map(item => `
+      <div class="submission-item" id="item-${item.submission_id}">
+        <img src="" id="thumb-${item.submission_id}" style="background:#eee">
+        <div class="info">
+          <div class="species">🐢 ${item.species_name}</div>
+          <div class="meta">${item.submitter_name || '匿名'} · ${item.created_at}</div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-approve btn-sm" onclick="review(${item.submission_id},'approved')">✅ 通过</button>
+          <button class="btn btn-reject btn-sm" onclick="review(${item.submission_id},'rejected')">❌ 拒绝</button>
+        </div>
+      </div>
+    `).join('');
+    
+    // 延迟加载图片缩略图
+    data.data.list.forEach(async item => {
+      const imgRes = await fetch(API+'/submissions/'+item.submission_id+'/image?admin_key='+adminKey);
+      const imgData = await imgRes.json();
+      if (imgData.ok) {
+        document.getElementById('thumb-'+item.submission_id).src = imgData.data.image_base64;
+      }
+    });
+  }
+  
+  // 加载统计
+  loadStats();
+}
+
+async function loadStats() {
+  const res = await fetch(API+'/stats?admin_key='+adminKey);
+  const data = await res.json();
+  if (!data.ok) return;
+  const s = {};
+  data.data.stats.forEach(x => s[x.status] = x.cnt);
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat"><div class="num">${s.pending||0}</div><div class="label">待审核</div></div>
+    <div class="stat"><div class="num">${s.approved||0}</div><div class="label">已通过</div></div>
+    <div class="stat"><div class="num">${s.rejected||0}</div><div class="label">已拒绝</div></div>
+  `;
+}
+
+async function review(id, action) {
+  const notes = action === 'rejected' ? prompt('拒绝原因（选填）：') : '';
+  if (notes === null) return; // 取消
+  const res = await fetch(API+'/submissions/'+id+'/review', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ admin_key: adminKey, action, notes })
+  });
+  const d = await res.json();
+  if (d.ok) {
+    document.getElementById('item-'+id).style.opacity = '0.4';
+    document.getElementById('item-'+id).querySelector('.actions').innerHTML = 
+      `<span style="font-size:12px;color:${action==='approved'?'#4CAF50':'#f44336'}">${action==='approved'?'✅ 已通过':'❌ 已拒绝'}</span>`;
+    loadStats();
+  } else {
+    toast('操作失败: '+d.error);
+  }
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
