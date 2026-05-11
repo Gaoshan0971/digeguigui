@@ -21,6 +21,9 @@ db.exec(`
     avatar_url TEXT DEFAULT '',
     role TEXT DEFAULT 'hobbyist',       -- hobbyist | breeder | expert
     reputation INTEGER DEFAULT 0,
+    appraisal_count INTEGER DEFAULT 0,
+    ai_consistency INTEGER DEFAULT 0,    -- AI一致性 0-100
+    appraiser_grade INTEGER DEFAULT 1,   -- 品鉴师等级 1-5
     city TEXT DEFAULT '',
     created_at TEXT DEFAULT (datetime('now','localtime'))
   );

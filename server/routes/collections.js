@@ -50,11 +50,14 @@ function register(app) {
 
     // 鉴赏评论
     const appraisals = db.prepare(`
-      SELECT a.*, u.nickname, u.avatar_url
+      SELECT a.*, u.nickname, u.avatar_url, u.appraiser_grade, u.role,
+             CASE WHEN a.user_id = 0 THEN 'ai' ELSE 'user' END as appraiser_type
       FROM appraisals a
       JOIN users u ON a.user_id = u.user_id
       WHERE a.collection_id = ?
-      ORDER BY a.created_at DESC
+      ORDER BY 
+        CASE WHEN a.user_id = 0 THEN 1 ELSE 2 END,
+        a.created_at DESC
       LIMIT 50
     `).all(req.params.id);
 

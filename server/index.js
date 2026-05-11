@@ -40,6 +40,7 @@ require('./routes/appraisals').register(app);
 require('./routes/breedings').register(app);
 require('./routes/identify').register(app);
 require('./routes/dataset').register(app);
+require('./routes/appraise-ai').register(app);
 
 // 注册用户路由
 app.post('/api/users/login', (req, res) => {

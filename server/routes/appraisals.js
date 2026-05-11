@@ -10,11 +10,13 @@ function register(app) {
     const offset = (page - 1) * limit;
 
     const list = db.prepare(`
-      SELECT a.*, u.nickname, u.avatar_url
+      SELECT a.*, u.nickname, u.avatar_url, u.appraiser_grade, u.role
       FROM appraisals a
       JOIN users u ON a.user_id = u.user_id
       WHERE a.collection_id = ?
-      ORDER BY a.created_at DESC
+      ORDER BY 
+        CASE WHEN a.user_id = 0 THEN 1 ELSE 2 END,
+        a.created_at DESC
       LIMIT ? OFFSET ?
     `).all(req.params.id, Number(limit), offset);
 
@@ -36,6 +38,9 @@ function register(app) {
       INSERT INTO appraisals (collection_id, user_id, comment, shell_score, head_score, color_score, body_score, health_score)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(collection_id, user.user_id, comment, shell_score, head_score, color_score, body_score, health_score);
+
+    // 更新用户品鉴次数
+    db.prepare('UPDATE users SET appraisal_count = appraisal_count + 1 WHERE user_id = ?').run(user.user_id);
 
     updateCollectionGrade(collection_id);
 
