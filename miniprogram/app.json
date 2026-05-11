@@ -11,16 +11,16 @@
     "pages/breeder/breeder"
   ],
   "window": {
-    "navigationBarBackgroundColor": "#1a3a2a",
+    "navigationBarBackgroundColor": "#B8956A",
     "navigationBarTitleText": "滴个龟龟",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#0d2518"
+    "backgroundColor": "#F7F4EF"
   },
   "tabBar": {
-    "color": "#6a9a7a",
-    "selectedColor": "#d4a853",
-    "backgroundColor": "#0d2518",
-    "borderStyle": "black",
+    "color": "#A09080",
+    "selectedColor": "#B8956A",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
     "list": [
       {"pagePath": "pages/identify/identify", "text": "识龟", "iconPath": "images/tab-scan.png", "selectedIconPath": "images/tab-scan-active.png"},
       {"pagePath": "pages/gene/gene", "text": "基因", "iconPath": "images/tab-dna.png", "selectedIconPath": "images/tab-dna-active.png"},
