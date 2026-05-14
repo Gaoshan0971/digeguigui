@@ -172,4 +172,12 @@ for (const col of newColumns) {
   }
 }
 
+// ==================== Migration: Provenance v1 ====================
+const fs = require('fs');
+const provPath = path.join(__dirname, '..', 'data', 'provenance_schema.sql');
+if (fs.existsSync(provPath)) {
+  db.exec(fs.readFileSync(provPath, 'utf-8'));
+  console.log('[db] Provenance tables ready');
+}
+
 module.exports = db;
