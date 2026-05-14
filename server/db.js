@@ -33,12 +33,23 @@ db.exec(`
     species_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name_cn TEXT NOT NULL,
     name_latin TEXT NOT NULL,
+    common_name_en TEXT DEFAULT '',
     family TEXT DEFAULT '',
+    genus TEXT DEFAULT '',
     difficulty INTEGER DEFAULT 0,       -- 饲养难度 1-5
     overview TEXT DEFAULT '',
+    distribution TEXT DEFAULT '',
+    habitat TEXT DEFAULT '',
+    conservation TEXT DEFAULT '',
+    reproduction TEXT DEFAULT '',
+    etymology TEXT DEFAULT '',
     traits TEXT DEFAULT '{}',           -- JSON: 识别特征
     care_params TEXT DEFAULT '{}',      -- JSON: 饲养参数
     image_url TEXT DEFAULT '',
+    image_attribution TEXT DEFAULT '',
+    image_license TEXT DEFAULT '',
+    wikipedia_url TEXT DEFAULT '',
+    observations_count INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now','localtime'))
   );
 
@@ -138,5 +149,27 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_breedings_breeder ON breedings(breeder_id);
   CREATE INDEX IF NOT EXISTS idx_likes_target ON likes(target_type, target_id);
 `);
+
+// ==================== Migration: v2 扩字段 ====================
+// 为已有数据库补充新列（忽略已存在的列）
+const newColumns = [
+  'common_name_en TEXT DEFAULT \'\'',
+  'genus TEXT DEFAULT \'\'',
+  'distribution TEXT DEFAULT \'\'',
+  'habitat TEXT DEFAULT \'\'',
+  'conservation TEXT DEFAULT \'\'',
+  'reproduction TEXT DEFAULT \'\'',
+  'etymology TEXT DEFAULT \'\'',
+  'image_attribution TEXT DEFAULT \'\'',
+  'image_license TEXT DEFAULT \'\'',
+  'wikipedia_url TEXT DEFAULT \'\'',
+  'observations_count INTEGER DEFAULT 0',
+];
+for (const col of newColumns) {
+  const colName = col.split(' ')[0];
+  try { db.exec(`ALTER TABLE species ADD COLUMN ${col}`); } catch (e) {
+    // 列已存在，忽略
+  }
+}
 
 module.exports = db;
