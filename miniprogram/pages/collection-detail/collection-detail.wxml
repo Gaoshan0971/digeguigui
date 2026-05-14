@@ -27,6 +27,30 @@
       <view class="score-block"><text class="score-num">{{item.health_score}}</text><text class="score-dim">状态</text></view>
     </view>
 
+    <!-- 💰 AI品鉴 -->
+    <view wx:if="{{!hasPaidAppraise}}" class="ai-appraise-cta">
+      <button bindtap="doAIAppraise" class="btn-gold" loading="{{aiLoading}}">
+        🧬 ¥9.90 解锁AI品鉴报告
+      </button>
+      <text class="text-muted" style="text-align:center;display:block;margin-top:6px">五维打分 + 品级 + 市场估价</text>
+    </view>
+
+    <!-- AI品鉴结果 -->
+    <view wx:if="{{aiResult}}" class="ai-result-card">
+      <view class="flex-between">
+        <text class="section-title">🤖 AI品鉴报告</text>
+        <view class="grade-badge" style="background:linear-gradient(135deg,#B8956A,#D4A574)">{{aiResult.overall_grade}}</view>
+      </view>
+      <view class="score-row" style="margin-top:12px">
+        <view class="score-block"><text class="score-num">{{aiResult.shell_score}}</text><text class="score-dim">壳形</text></view>
+        <view class="score-block"><text class="score-num">{{aiResult.head_score}}</text><text class="score-dim">头纹</text></view>
+        <view class="score-block"><text class="score-num">{{aiResult.color_score}}</text><text class="score-dim">色泽</text></view>
+        <view class="score-block"><text class="score-num">{{aiResult.body_score}}</text><text class="score-dim">体型</text></view>
+        <view class="score-block"><text class="score-num">{{aiResult.health_score}}</text><text class="score-dim">状态</text></view>
+      </view>
+      <view wx:if="{{aiResult.comment}}" class="ai-comment">{{aiResult.comment}}</view>
+    </view>
+
     <view class="flex-between mt-12">
       <text class="wf-likes" bindtap="onLike">❤️ {{item.likes || 0}} 赞</text>
       <text class="text-muted">{{item.city}}</text>

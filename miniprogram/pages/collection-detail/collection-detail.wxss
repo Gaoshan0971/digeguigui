@@ -19,3 +19,9 @@
 
 .comment-box { margin-top:16px; }
 .comment-inp { background:var(--bg); border-radius:var(--radius-sm); padding:12px; font-size:14px; color:var(--text); }
+
+/* 💰 AI品鉴 */
+.ai-appraise-cta { margin:16px 0; padding:16px; background:linear-gradient(135deg,#FFF8F0,#FFFDF8); border-radius:var(--radius); border:1px dashed #D4A574; }
+.ai-result-card { margin:16px 0; padding:16px; background:linear-gradient(135deg,#FFFDF5,#FFF8EC); border-radius:var(--radius); border:1px solid #E8D5B0; }
+.ai-comment { margin-top:12px; padding:12px; background:var(--bg); border-radius:8px; font-size:13px; color:var(--text-secondary); line-height:1.7; }
+.btn-gold { width:100%; background:linear-gradient(135deg,#B8956A,#D4A574); color:#fff; border-radius:var(--radius-sm); font-size:16px; font-weight:600; padding:14px; border:none; }
