@@ -81,7 +81,7 @@ module.exports.register = function (app) {
     let gitHash = '';
     try {
       const repoRoot = path.join(__dirname, '..', '..');
-      execSync(`cd "${repoRoot}" && git add "${jsonFile}"`, { timeout: 5000 });
+      execSync(`cd "${repoRoot}" && git add -f "${jsonFile}"`, { timeout: 5000 });
       execSync(`cd "${repoRoot}" && git commit -m "锚定 ${anchorId} · ${individual_name||'sp'+species_id} · ${birth_date}"`, { timeout: 5000 });
       gitHash = execSync(`cd "${repoRoot}" && git rev-parse HEAD`, { timeout: 3000 }).toString().trim();
       execSync(`cd "${repoRoot}" && git push`, { timeout: 15000 });
