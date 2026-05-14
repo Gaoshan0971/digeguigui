@@ -8,7 +8,8 @@
     "pages/collection-detail/collection-detail",
     "pages/upload/upload",
     "pages/breeding-detail/breeding-detail",
-    "pages/breeder/breeder"
+    "pages/breeder/breeder",
+    "pages/morph-id/morph-id"
   ],
   "window": {
     "navigationBarBackgroundColor": "#B8956A",

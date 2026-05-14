@@ -91,5 +91,9 @@ Page({
 
   goBreeding(e) {
     wx.navigateTo({ url: '/pages/breeding-detail/breeding-detail?id=' + e.currentTarget.dataset.id });
+  },
+
+  goMorphId() {
+    wx.navigateTo({ url: '/pages/morph-id/morph-id' });
   }
 });

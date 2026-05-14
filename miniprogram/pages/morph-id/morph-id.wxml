@@ -1,0 +1,98 @@
+<!-- pages/morph-id/morph-id.wxml 品系鉴定 — 问答式基因匹配 -->
+<view class="pg">
+  <view class="gh">
+    <text class="gh-title">🧬 品系鉴定</text>
+    <text class="gh-sub">选品种 → 答几个问题 → 匹配品系</text>
+  </view>
+
+  <!-- Step 1: 选品种 -->
+  <view class="card" wx:if="{{step==1}}">
+    <text class="section-title">第一步：选择品种</text>
+    <view class="species-pick-list">
+      <view class="sp-pick {{selSpecies==s.species_id?'active':''}}" wx:for="{{speciesList}}" wx:key="species_id" bindtap="pickSpecies" data-id="{{s.species_id}}">
+        <text class="sp-emoji">{{s.category=='蛇'?'🐍':s.category=='守宫'?'🦎':'🦎'}}</text>
+        <view>
+          <text class="sp-name">{{s.name_cn}}</text>
+          <text class="sp-meta">{{s.morph_count}} 基因收录</text>
+        </view>
+      </view>
+    </view>
+    <button class="btn-gold mt-16" wx:if="{{selSpecies}}" bindtap="startQuestions">开始鉴定 →</button>
+  </view>
+
+  <!-- Step 2-5: 回答问题 -->
+  <view class="card" wx:if="{{step >= 2 && step <= 6}}">
+    <text class="section-title">第{{step-1}}步：{{currentQ}}</text>
+    <text class="text-muted" style="margin-bottom:16px">{{currentQDesc}}</text>
+    
+    <view class="answer-list">
+      <view class="answer-opt {{selAnswers[step-2]==a.value?'active':''}}" wx:for="{{currentOptions}}" wx:key="value" bindtap="pickAnswer" data-value="{{item.value}}">
+        <text class="ao-emoji">{{item.emoji}}</text>
+        <text class="ao-label">{{item.label}}</text>
+        
+        <text class="ao-desc" wx:if="{{item.desc}}">{{item.desc}}</text>
+        
+      </view>
+    </view>
+    
+    <view class="btn-row" wx:if="{{step < 6}}">
+      <button class="btn-ghost" bindtap="prevStep">← 上一步</button>
+      <button class="btn-gold" bindtap="nextStep" wx:if="{{selAnswers[step-2]}}">下一步 →</button>
+    </view>
+    <button class="btn-gold" wx:if="{{step == 6 && selAnswers[step-2]}}" bindtap="computeMatch">🔍 查看匹配结果</button>
+  </view>
+
+  <!-- Step 7: 结果 -->
+  <view wx:if="{{step==7 && loading}}">
+    <view class="loading"><view class="spinner"></view></view>
+  </view>
+
+  <view wx:if="{{step==7 && !loading}}">
+    <!-- Top match -->
+    <view class="card result-hero" wx:if="{{matches && matches.length}}">
+      <text class="section-title">🎯 最佳匹配</text>
+      <view class="rh-match">
+        <text class="rh-name">{{matches[0].name_cn||matches[0].name}}</text>
+        <text class="rh-type">{{matches[0].type=='combo'?'组合品系':'单基因品系'}}</text>
+        <text class="rh-confidence {{matches[0].score >= 80 ? 'high' : matches[0].score >= 50 ? 'mid' : 'low'}}">
+          匹配度 {{matches[0].score}}%
+        </text>
+      
+      <view class="rh-details" wx:if="{{matches[0].formula}}">
+        <text class="rh-formula">{{matches[0].formula}}</text>
+      </view>
+      <text class="rh-desc" wx:if="{{matches[0].desc}}">{{matches[0].desc}}</text>
+      <view class="rh-price" wx:if="{{matches[0].price_low}}">
+        <text class="rh-price-label">市场参考价</text>
+        <text class="rh-price-value">¥{{matches[0].price_low}} - ¥{{matches[0].price_high}}</text>
+      </view>
+    </view>
+
+    <!-- Other matches -->
+    <view class="card" wx:if="{{matches && matches.length > 1}}">
+      <text class="section-title">其他可能</text>
+      <view class="match-list">
+        <view class="match-item" wx:for="{{matches}}" wx:for-item="m" wx:key="name" wx:if="{{idx > 0}}">
+          <view class="mi-left">
+            <text class="mi-name">{{m.name_cn||m.name}}</text>
+            <text class="mi-formula" wx:if="{{m.formula}}">{{m.formula}}</text>
+          </view>
+          <view class="mi-right">
+            <text class="mi-score">{{m.score}}%</text>
+            <text class="mi-price" wx:if="{{m.price_low}}">¥{{m.price_low}}-{{m.price_high}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- Not found -->
+    <view class="card empty-state" wx:if="{{!matches || !matches.length}}">
+      <text class="icon">🔍</text>
+      <text class="title">未找到完全匹配</text>
+      <text class="desc">该品种当前收录 {{morphCount}} 个基因/组合，但未匹配到你的描述。试试调整答案。</text>
+      <button class="btn-ghost mt-16" bindtap="reset">重新鉴定</button>
+    </view>
+
+    <button class="btn-gold mt-16" style="margin:16px" bindtap="reset" wx:if="{{matches && matches.length}}">🔄 重新鉴定</button>
+  </view>
+</view>

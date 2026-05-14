@@ -60,6 +60,10 @@
 .combo-label { font-size: 12px; color: var(--text-muted); }
 .combo-name { font-size: 12px; font-weight: 600; color: var(--gold); }
 
+.morph-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 16px 10px; }
+.morph-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.morph-id-btn { background: var(--gold); color: #FFF; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+
 .breeding-card {}
 .br-name { font-size: 15px; font-weight: 600; color: var(--text); display: block; }
 .br-count-badge { background: var(--gold-bg); color: var(--gold); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }

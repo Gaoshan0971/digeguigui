@@ -67,7 +67,13 @@
   </view>
 
   <!-- 品系列表（基因控品种） -->
-  <view wx:if="{{tab=='morphs'}}">
+    <view wx:if="{{tab=='morphs'}}">
+    <view class="morph-header">
+      <text class="morph-title">🧬 基因控品种</text>
+      <view class="morph-id-btn" bindtap="goMorphId">
+        <text>🔍 品系鉴定</text>
+      </view>
+    </view>
     <view wx:if="{{!morphSpecies.length}}" class="empty-state">
       <text class="icon">🧬</text>
       <text class="title">品系加载中...</text>

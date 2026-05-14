@@ -13,7 +13,7 @@
   <!-- Tab -->
   <view class="tab-row" wx:if="{{species.morph_heavy || morphs}}">
     <view class="tab-item {{detailTab=='info'?'active':''}}" bindtap="switchDetailTab" data-tab="info">📖 百科</view>
-    <view class="tab-item {{detailTab=='morphs'?'active':''}}" bindtap="switchDetailTab" data-tab="morphs">🧬 品系</view>
+    <view class="tab-item {{detailTab=='morphs'?'active':''}}" bindtap="switchDetailTab" data-tab="morphs">🧬 品系{{morphs ? ' (' + (morphs.genes?morphs.genes.length:0) + ')' : ''}}</view>
   </view>
 
   <!-- 百科 Tab -->
@@ -41,6 +41,25 @@
 
   <!-- 品系 Tab -->
   <view wx:if="{{detailTab=='morphs' && morphs}}">
+    <!-- 💰 价格阶梯 -->
+    <view class="card" wx:if="{{morphs.priceLadder && morphs.priceLadder.length}}">
+      <text class="section-title">💰 价格阶梯</text>
+      <view class="price-ladder">
+        <view class="pl-step" wx:for="{{morphs.priceLadder}}" wx:key="label">
+          <view class="pl-dot {{item.rarity}}"></view>
+          <view class="pl-body">
+            <view class="pl-header">
+              <text class="pl-label">{{item.label}}</text>
+              <text class="pl-rarity" wx:if="{{item.rarity}}">{{item.rarity}}</text>
+            </view>
+            <text class="pl-desc">{{item.desc}}</text>
+            <text class="pl-price">¥{{item.low}} - ¥{{item.high}}</text>
+          </view>
+          <view class="pl-line" wx:if="{{idx < morphs.priceLadder.length-1}}"></view>
+        </view>
+      </view>
+    </view>
+
     <!-- 基因 -->
     <view class="card" wx:if="{{morphs.genes && morphs.genes.length}}">
       <text class="section-title">🧬 已收录基因 ({{morphs.genes.length}})</text>
@@ -51,6 +70,7 @@
             <text class="gi-name">{{g.gene_name_cn||g.gene_name}}</text>
           </view>
           <view class="gi-right">
+            <text class="gi-price" wx:if="{{g.price && g.price.price_range_low}}">¥{{g.price.price_range_low}}-{{g.price.price_range_high}}</text>
             <text class="gene-inherit {{g.inheritance}}">{{g.inheritance=='recessive'?'隐性':g.inheritance=='dominant'?'显性':g.inheritance=='codominant'?'共显':'多基因'}}</text>
             <text class="gene-cat">{{g.category}}</text>
           </view>
@@ -62,14 +82,20 @@
     <view class="card" wx:if="{{morphs.combos && morphs.combos.length}}">
       <text class="section-title">🎨 经典组合品系 ({{morphs.combos.length}})</text>
       <view class="combo-list">
-        <view class="combo-item" wx:for="{{morphs.combos}}" wx:for-item="c" wx:key="combo_id">
+        <view class="combo-item {{c.price && c.price.price_range_high > 10000 ? 'combo-rare' : ''}}" wx:for="{{morphs.combos}}" wx:for-item="c" wx:key="combo_id">
           <view class="ci-header">
             <text class="ci-name">{{c.combo_name_cn||c.combo_name}}</text>
-            <text class="ci-formula">{{c.combo_formula}}</text>
+            <text class="ci-price" wx:if="{{c.price && c.price.price_range_low}}">¥{{c.price.price_range_low}}-{{c.price.price_range_high}}</text>
           </view>
+          <text class="ci-formula">{{c.combo_formula}}</text>
           <text class="ci-desc" wx:if="{{c.description}}">{{c.description}}</text>
         </view>
       </view>
+    </view>
+
+    <view class="card empty-morph" wx:if="{{!morphs.genes || !morphs.genes.length}}">
+      <text class="section-title">🧬 品系数据</text>
+      <text class="text-muted">该品种暂未收录基因数据</text>
     </view>
   </view>
 
