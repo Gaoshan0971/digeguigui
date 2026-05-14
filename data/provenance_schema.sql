@@ -156,3 +156,20 @@ CREATE TABLE IF NOT EXISTS biometric_templates (
 
 CREATE INDEX IF NOT EXISTS idx_bio_anchor ON biometric_templates(anchor_id);
 CREATE INDEX IF NOT EXISTS idx_bio_match ON biometric_templates(species_id, template_version);
+
+-- 支付订单
+CREATE TABLE IF NOT EXISTS payment_orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    out_trade_no TEXT UNIQUE NOT NULL,
+    user_id INTEGER REFERENCES users(user_id),
+    product_type TEXT NOT NULL,           -- appraise | anchor_50 | anchor_100 | anchor_daily | breeder_cert
+    product_id TEXT DEFAULT '',
+    total_fee INTEGER NOT NULL,           -- 分
+    status TEXT DEFAULT 'pending',        -- pending | paid | refunded | closed
+    transaction_id TEXT,                  -- 微信支付交易号
+    paid_at TEXT,
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_user ON payment_orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_payment_out ON payment_orders(out_trade_no);
