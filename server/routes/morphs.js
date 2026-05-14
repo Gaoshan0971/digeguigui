@@ -24,8 +24,12 @@ module.exports.register = function (app) {
     const offset = parseInt(q.offset) || 0;
     sql += ` LIMIT ${limit} OFFSET ${offset}`;
     const rows = db.prepare(sql).all(...params);
-    const total = db.prepare('SELECT COUNT(*) as cnt FROM species WHERE 1=1' + 
-      (q.category ? ' AND category = ?' : '')).get(...(q.category ? [q.category] : [])).cnt;
+    // Count with same filters (minus limit/offset)
+    let countSql = 'SELECT COUNT(*) as cnt FROM species WHERE 1=1';
+    const countParams = [];
+    if (q.category) { countSql += ' AND category = ?'; countParams.push(q.category); }
+    if (q.q) { countSql += ' AND (name_cn LIKE ? OR name_latin LIKE ? OR common_name_en LIKE ?)'; countParams.push(`%${q.q}%`, `%${q.q}%`, `%${q.q}%`); }
+    const total = db.prepare(countSql).get(...countParams).cnt;
     res.json({ ok: true, data: rows, total, limit, offset });
   });
 
