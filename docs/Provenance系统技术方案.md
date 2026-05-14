@@ -1,6 +1,6 @@
 # 🐢 滴个龟龟 Provenance 系统 — 爬宠出生证明技术方案
 
-> v1.0 | 2026-05-14  
+> v1.1 | 2026-05-14  
 > Owner: Hermes (代表滴个龟龟项目)
 
 ---
@@ -40,8 +40,9 @@
 ### 2.2 为什么出生时刻是关键
 
 - **WC 个体不存在出生时刻的锚定记录**——这本身就是 CB 的铁证
-- **后补出生证明不可行**——时间戳服务（第三方授时）+ GPS + AI 幼体特征识别的三重验证
+- **后补出生证明不可行**——AI 幼体特征检测（尺寸/卵齿/卵黄囊残留）+ Git commit 时间戳，三重验证
 - **壳纹/头纹是天然指纹**——每只龟的背甲盾片排列天生独一无二，出生时拍照 + AI 提取特征向量 = 终身可验证
+- **历任主人都可追加备注**——喂食习惯、环境变化、性格观察，每任主人往时间线上加一笔，完整生命史不可篡改
 
 ---
 
@@ -217,9 +218,12 @@ CREATE TABLE provenance_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     anchor_id TEXT NOT NULL REFERENCES provenance_anchors(anchor_id),
 
-    event_type TEXT NOT NULL,             -- health_check | measurement | shedding | photo | milestone
+    -- 记录者（繁育者 / 历任主人）
+    owner_id INTEGER REFERENCES users(id),  -- NULL=系统自动（如AI匹配记录）
+
+    event_type TEXT NOT NULL,             -- health_check | measurement | shedding | feeding | behavior | environment | note | photo | milestone
     event_date TEXT NOT NULL,
-    description TEXT,
+    description TEXT,                     -- 自由备注：喂食习惯、环境变化、性格等
 
     -- 测量数据
     weight REAL,                          -- 克
@@ -231,13 +235,14 @@ CREATE TABLE provenance_events (
     biometric_match_score REAL,           -- 与上一次的匹配分 (检测生长变化)
 
     -- 链上
-    event_hash TEXT,
+    event_hash TEXT,                      -- SHA256(prev_event_hash || event_data)
     prev_event_hash TEXT,
 
     created_at TEXT DEFAULT (datetime('now'))
 );
 
 CREATE INDEX idx_events_anchor ON provenance_events(anchor_id);
+CREATE INDEX idx_events_owner ON provenance_events(owner_id);
 ```
 
 ### 4.5 生物特征模板表 (biometric_templates)
@@ -580,28 +585,42 @@ const result = await wx.request({
 │  DGG-T-000128 · 黄缘闭壳龟     │
 │                                │
 │  ● 2026-05-10                  │
-│  │ 🐣 出生登记                  │
-│  │ 繁育者：陈师傅               │
+│  │ 🐣 出生登记 — 繁育者·陈师傅  │
 │  │ 地点：广州越秀               │
 │  │ 父本：DGG-T-000045          │
 │  │ 母本：DGG-T-000046          │
 │  │ 锚定哈希：a1b2c3... ✓       │
 │  │                             │
-│  ● 2026-06-15                  │
+│  ● 2026-06-15   👤 陈师傅      │
+│  │ 📝 喂食习惯                  │
+│  │    爱吃小鱼虾，不碰龟粮      │
+│  │                             │
+│  ● 2026-07-20   👤 陈师傅      │
 │  │ 📏 首次体检                  │
-│  │ 体重：28g · 体长：4.2cm     │
-│  │ 特征匹配：98.7%              │
+│  │    体重：28g · 体长：4.2cm  │
+│  │    特征匹配：98.7%           │
 │  │                             │
 │  ● 2026-09-01                  │
 │  │ 🤝 所有权转移               │
-│  │ 卖家：陈师傅 → 买家：张先生  │
-│  │ 成交价：¥2,800              │
-│  │ 交接验证匹配：96.3%          │
+│  │    陈师傅 → 张先生          │
+│  │    成交价：¥2,800           │
+│  │    交接验证匹配：96.3%       │
 │  │                             │
-│  ○ 2026-09-15                  │
-│    📸 新主人首次拍照            │
-│    特征匹配：95.8%              │
-│                                │
+│  ● 2026-09-10   👤 张先生      │
+│  │ 🏠 环境适应                  │
+│  │    换了深水缸，前两天躲角落  │
+│  │    第三天开始游了            │
+│  │                             │
+│  ● 2026-10-01   👤 张先生      │
+│  │ 🍽 喂食偏好                  │
+│  │    开始接受龟粮了            │
+│  │    推荐高够力三色            │
+│  │                             │
+│  ● 2026-12-25   👤 张先生      │
+│  │ 📏 冬眠前测量                │
+│  │    体重：45g · 体长：5.1cm  │
+│  │    特征匹配：95.8%           │
+│  │                             │
 │  [验证完整性 ✓]                │
 └────────────────────────────────┘
 ```
