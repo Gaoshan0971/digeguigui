@@ -1,0 +1,22 @@
+{
+  "anchor_id": "DGG-T-000003",
+  "species_id": 82,
+  "individual_name": "CB-2026-003",
+  "clutch_id": "WM-2026-01",
+  "birth_date": "2026-05-14",
+  "birth_gps": {
+    "lat": 30.5728,
+    "lng": 104.0668
+  },
+  "parent_male_anchor": null,
+  "parent_female_anchor": null,
+  "photos": [
+    "cos://a.jpg"
+  ],
+  "biometric_hash": "hash789",
+  "biometric_model": "resnet50_v1",
+  "feature_dim": 2048,
+  "breeder_id": 6,
+  "sex": "female",
+  "created_at": "2026-05-14T14:08:24.673Z"
+}
