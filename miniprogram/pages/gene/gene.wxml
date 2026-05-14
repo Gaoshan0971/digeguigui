@@ -1,58 +1,109 @@
-<!-- pages/gene/gene.wxml 基因 — 品种百科 + 血统 -->
+<!-- pages/gene/gene.wxml 基因 — 品类切换 + 品种百科 + 品系摘要 -->
 <view class="pg">
-  <!-- Header -->
   <view class="gh">
     <text class="gh-title">品种基因库</text>
-    <text class="gh-sub">370+ 龟种 · 品系图谱 · 血统溯源</text>
+    <text class="gh-sub">630种 · 159基因 · 167组合品系</text>
   </view>
+
+  <!-- 品类标签 -->
+  <scroll-view class="cat-scroll" scroll-x>
+    <view class="cat-row">
+      <view class="cat-tag {{curCat==''?'active':''}}" bindtap="setCat" data-cat="">全部</view>
+      <view class="cat-tag {{curCat=='龟'?'active':''}}" bindtap="setCat" data-cat="龟">🐢 龟 366</view>
+      <view class="cat-tag {{curCat=='蛇'?'active':''}}" bindtap="setCat" data-cat="蛇">🐍 蛇 91</view>
+      <view class="cat-tag {{curCat=='蜥蜴'?'active':''}}" bindtap="setCat" data-cat="蜥蜴">🦎 蜥蜴 77</view>
+      <view class="cat-tag {{curCat=='蛙'?'active':''}}" bindtap="setCat" data-cat="蛙">🐸 蛙 60</view>
+      <view class="cat-tag {{curCat=='守宫'?'active':''}}" bindtap="setCat" data-cat="守宫">🦎 守宫 36</view>
+    </view>
+  </scroll-view>
 
   <!-- 搜索 -->
   <view class="search-bar">
     <text class="search-icon">🔍</text>
-    <input class="search-input" placeholder="搜索龟种..." bindinput="onSearch" />
+    <input class="search-input" placeholder="搜索品种..." bindinput="onSearch" />
   </view>
 
   <!-- 标签切换 -->
   <view class="tab-row">
-    <view class="tab-item {{tab == 'species' ? 'active' : ''}}" bindtap="switchTab" data-tab="species">
-      <text>📚 品种百科</text>
+    <view class="tab-item {{tab=='species'?'active':''}}" bindtap="switchTab" data-tab="species">
+      <text>📚 品种</text>
     </view>
-    <view class="tab-item {{tab == 'breeding' ? 'active' : ''}}" bindtap="switchTab" data-tab="breeding">
-      <text>🧬 血统记录</text>
+    <view class="tab-item {{tab=='morphs'?'active':''}}" bindtap="switchTab" data-tab="morphs">
+      <text>🧬 品系</text>
+    </view>
+    <view class="tab-item {{tab=='breeding'?'active':''}}" bindtap="switchTab" data-tab="breeding">
+      <text>🐣 血统</text>
     </view>
   </view>
 
   <!-- 品种列表 -->
-  <view wx:if="{{tab == 'species'}}">
-    <view wx:if="{{loading}}" class="loading">
-      <view class="spinner"></view>
-    </view>
+  <view wx:if="{{tab=='species'}}">
+    <view wx:if="{{loading}}" class="loading"><view class="spinner"></view></view>
 
     <view wx:for="{{speciesList}}" wx:key="species_id" class="species-card" bindtap="goSpecies" data-id="{{item.species_id}}">
       <view class="sc-left">
-        <text class="sc-emoji">🐢</text>
+        <text class="sc-emoji">{{item.category=='蛇'?'🐍':item.category=='蛙'?'🐸':item.category=='蜥蜴'?'🦎':item.category=='守宫'?'🦎':'🐢'}}</text>
       </view>
       <view class="sc-body">
         <view class="flex-between">
           <text class="sc-name">{{item.name_cn}}</text>
-          <text class="tag tag-gold">{{'⭐'.repeat(item.difficulty)}}</text>
+          <view class="sc-badges">
+            <text class="tag tag-gold" wx:if="{{item.difficulty}}">{{'⭐'.repeat(item.difficulty)}}</text>
+            <text class="tag tag-dna" wx:if="{{item.morph_heavy}}">🧬 基因控</text>
+          </view>
         </view>
         <text class="sc-latin">{{item.name_latin}}</text>
         <view class="sc-tags">
           <text class="tag">{{item.family}}</text>
+          <text class="tag tag-morph" wx:if="{{item.morph_count}}">{{item.morph_count}} 品系</text>
         </view>
       </view>
       <text class="sc-arrow">›</text>
     </view>
 
     <view wx:if="{{!loading && !speciesList.length}}" class="empty-state">
-      <text class="icon">🔬</text>
-      <text class="title">暂无品种数据</text>
+      <text class="icon">🔬</text><text class="title">暂无结果</text>
+    </view>
+  </view>
+
+  <!-- 品系列表（基因控品种） -->
+  <view wx:if="{{tab=='morphs'}}">
+    <view wx:if="{{!morphSpecies.length}}" class="empty-state">
+      <text class="icon">🧬</text>
+      <text class="title">品系加载中...</text>
+    </view>
+
+    <view wx:for="{{morphSpecies}}" wx:key="species_id" class="morph-card" bindtap="goMorphDetail" data-id="{{item.species_id}}" data-name="{{item.name_cn}}">
+      <view class="mc-header">
+        <view class="mc-title-row">
+          <text class="mc-emoji">{{item.category=='蛇'?'🐍':item.category=='守宫'?'🦎':'🦎'}}</text>
+          <view>
+            <text class="mc-name">{{item.name_cn}}</text>
+            <text class="mc-latin">{{item.name_latin}}</text>
+          </view>
+        </view>
+        <view class="mc-badge">{{item.morph_count}} 基因</view>
+      </view>
+
+      <!-- 基因预览（前5个） -->
+      <view class="gene-chips" wx:if="{{item.genes_preview && item.genes_preview.length}}">
+        <view class="gene-chip {{g.inheritance}}" wx:for="{{item.genes_preview}}" wx:for-item="g" wx:key="gene_symbol">
+          <text class="gene-symbol">{{g.gene_symbol}}</text>
+          <text class="gene-name">{{g.gene_name_cn||g.gene_name}}</text>
+        </view>
+        <text class="gene-more" wx:if="{{item.morph_count > 5}}">+{{item.morph_count - 5}} 更多</text>
+      </view>
+
+      <!-- 组合品系预览 -->
+      <view class="combo-preview" wx:if="{{item.combos_preview && item.combos_preview.length}}">
+        <text class="combo-label">经典组合:</text>
+        <text class="combo-name" wx:for="{{item.combos_preview}}" wx:for-item="c" wx:key="combo_name">{{c.combo_name_cn||c.combo_name}}{{idx < item.combos_preview.length-1 ? '/' : ''}}</text>
+      </view>
     </view>
   </view>
 
   <!-- 血统列表 -->
-  <view wx:if="{{tab == 'breeding'}}">
+  <view wx:if="{{tab=='breeding'}}">
     <view wx:for="{{breedingList}}" wx:key="breeding_id" class="breeding-card card" bindtap="goBreeding" data-id="{{item.breeding_id}}">
       <view class="flex-between mb-12">
         <view class="flex-row gap-8">
@@ -66,11 +117,8 @@
       </view>
       <text wx:if="{{item.notes}}" class="text-secondary">{{item.notes}}</text>
     </view>
-
     <view wx:if="{{!breedingList.length}}" class="empty-state">
-      <text class="icon">🧬</text>
-      <text class="title">暂无血统记录</text>
-      <text class="desc">繁育者将配对记录上链后，这里会展示完整的血统树</text>
+      <text class="icon">🧬</text><text class="title">暂无血统记录</text>
     </view>
   </view>
 </view>

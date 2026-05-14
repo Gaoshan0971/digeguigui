@@ -1,21 +1,74 @@
+/* pages/gene/gene.wxss */
 .pg { padding-bottom: 30px; }
-.gh { text-align: center; padding: 32px 20px 20px; }
+.gh { text-align: center; padding: 24px 20px 12px; }
 .gh-title { font-size: 26px; font-weight: 800; color: var(--text); display: block; }
 .gh-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; display: block; }
+
+.cat-scroll { white-space: nowrap; padding: 0 12px; margin-bottom: 4px; }
+.cat-row { display: inline-flex; gap: 8px; }
+.cat-tag { display: inline-block; padding: 8px 16px; border-radius: 20px; font-size: 13px; background: var(--bg-alt); color: var(--text-secondary); transition: all .2s; }
+.cat-tag.active { background: var(--gold); color: #FFF; font-weight: 600; }
+
+.search-bar { display: flex; align-items: center; margin: 8px 16px; background: var(--bg-card); border-radius: var(--radius-sm); padding: 10px 14px; box-shadow: var(--shadow-sm); }
+.search-icon { font-size: 16px; margin-right: 8px; }
+.search-input { flex: 1; font-size: 14px; border: none; outline: none; }
 
 .tab-row { display: flex; margin: 4px 16px 12px; background: var(--bg-card); border-radius: var(--radius-sm); overflow: hidden; box-shadow: var(--shadow-sm); }
 .tab-item { flex: 1; text-align: center; padding: 12px; font-size: 14px; color: var(--text-secondary); transition: all .2s; }
 .tab-item.active { background: var(--gold); color: #FFF; font-weight: 600; }
 
-.species-card { display: flex; align-items: center; padding: 16px; margin: 0 16px 8px; background: var(--bg-card); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); gap: 12px; }
+/* Species cards */
+.species-card { display: flex; align-items: center; padding: 14px 16px; margin: 0 16px 8px; background: var(--bg-card); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); gap: 12px; }
 .sc-left { width: 44px; height: 44px; background: var(--bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
 .sc-emoji { font-size: 22px; }
 .sc-body { flex: 1; }
 .sc-name { font-size: 16px; font-weight: 600; color: var(--text); }
-.sc-latin { font-size: 12px; color: var(--text-muted); font-style: italic; margin: 2px 0; display: block; }
-.sc-tags { margin-top: 4px; }
+.sc-latin { font-size: 11px; color: var(--text-muted); font-style: italic; margin: 2px 0; display: block; }
+.sc-tags { margin-top: 2px; display: flex; gap: 6px; }
+.sc-badges { display: flex; gap: 6px; align-items: center; }
 .sc-arrow { font-size: 22px; color: var(--text-muted); }
 
-.breeding-card {  }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+
+.tag { font-size: 11px; background: var(--bg); color: var(--text-secondary); padding: 2px 8px; border-radius: 10px; }
+.tag-gold { background: var(--gold-bg); color: var(--gold); font-weight: 600; }
+.tag-dna { background: #EDE9FE; color: #7C3AED; font-weight: 600; }
+.tag-morph { background: #FEF3C7; color: #D97706; }
+
+/* Morph cards */
+.morph-card { margin: 0 16px 10px; padding: 16px; background: var(--bg-card); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+.mc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.mc-title-row { display: flex; gap: 10px; align-items: center; }
+.mc-emoji { font-size: 28px; }
+.mc-name { font-size: 17px; font-weight: 700; color: var(--text); display: block; }
+.mc-latin { font-size: 11px; color: var(--text-muted); font-style: italic; }
+.mc-badge { background: var(--gold-bg); color: var(--gold); padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+
+/* Gene chips */
+.gene-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.gene-chip { display: flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 14px; font-size: 12px; }
+.gene-chip.recessive { background: #FEF9C3; }    /* yellow */
+.gene-chip.dominant { background: #DCFCE7; }      /* green */
+.gene-chip.codominant { background: #DBEAFE; }    /* blue */
+.gene-chip.polygenic { background: #F3E8FF; }     /* purple */
+.gene-symbol { font-weight: 700; color: var(--text); }
+.gene-name { color: var(--text-muted); }
+.gene-more { font-size: 12px; color: var(--text-muted); padding: 4px 8px; }
+
+/* Combo preview */
+.combo-preview { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.combo-label { font-size: 12px; color: var(--text-muted); }
+.combo-name { font-size: 12px; font-weight: 600; color: var(--gold); }
+
+.breeding-card {}
 .br-name { font-size: 15px; font-weight: 600; color: var(--text); display: block; }
 .br-count-badge { background: var(--gold-bg); color: var(--gold); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+
+.loading { text-align: center; padding: 40px; }
+.spinner { width: 32px; height: 32px; border: 3px solid var(--bg); border-top-color: var(--gold); border-radius: 50%; margin: 0 auto; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty-state { text-align: center; padding: 48px 20px; }
+.empty-state .icon { font-size: 40px; display: block; margin-bottom: 12px; }
+.empty-state .title { font-size: 15px; color: var(--text-secondary); font-weight: 600; display: block; }
+.empty-state .desc { font-size: 13px; color: var(--text-muted); margin-top: 4px; display: block; }

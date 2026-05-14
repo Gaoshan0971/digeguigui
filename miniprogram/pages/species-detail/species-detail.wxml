@@ -1,32 +1,74 @@
 <view class="pg" wx:if="{{species}}">
   <view class="sd-hero">
-    <text class="sd-icon">🐢</text>
+    <text class="sd-icon">{{species.category=='蛇'?'🐍':species.category=='蛙'?'🐸':species.category=='蜥蜴'?'🦎':species.category=='守宫'?'🦎':'🐢'}}</text>
     <text class="sd-name">{{species.name_cn}}</text>
     <text class="sd-latin">{{species.name_latin}}</text>
     <view class="sd-tags">
       <text class="tag tag-gold">{{species.diffStars}}</text>
       <text class="tag">{{species.family}}</text>
+      <text class="tag tag-dna" wx:if="{{species.morph_heavy}}">🧬 基因控</text>
     </view>
   </view>
 
-  <view class="card">
-    <text class="section-title">📖 品种概述</text>
-    <text class="text-secondary" style="line-height:1.8">{{species.overview}}</text>
+  <!-- Tab -->
+  <view class="tab-row" wx:if="{{species.morph_heavy || morphs}}">
+    <view class="tab-item {{detailTab=='info'?'active':''}}" bindtap="switchDetailTab" data-tab="info">📖 百科</view>
+    <view class="tab-item {{detailTab=='morphs'?'active':''}}" bindtap="switchDetailTab" data-tab="morphs">🧬 品系</view>
   </view>
 
-  <view class="card" wx:if="{{species.traits}}">
-    <text class="section-title">🔍 识别特征</text>
-    <view wx:for="{{species.traits}}" wx:for-item="v" wx:for-index="k" class="trait-row">
-      <text class="trait-key">{{k}}</text><text class="trait-val">{{v}}</text>
+  <!-- 百科 Tab -->
+  <view wx:if="{{detailTab=='info'}}">
+    <view class="card" wx:if="{{species.overview}}">
+      <text class="section-title">📖 品种概述</text>
+      <text class="text-secondary" style="line-height:1.8">{{species.overview}}</text>
+    </view>
+
+    <view class="card" wx:if="{{species.distribution}}">
+      <text class="section-title">🌍 分布</text>
+      <text class="text-secondary">{{species.distribution}}</text>
+    </view>
+
+    <view class="card" wx:if="{{species.care_params}}">
+      <text class="section-title">📋 饲养参数</text>
+      <view class="param-grid">
+        <view wx:for="{{species.care_params}}" wx:for-item="v" wx:for-index="k" class="param-cell">
+          <text class="param-label">{{k}}</text>
+          <text class="param-value">{{v}}</text>
+        </view>
+      </view>
     </view>
   </view>
 
-  <view class="card" wx:if="{{species.care_params}}">
-    <text class="section-title">📋 饲养参数</text>
-    <view class="param-grid">
-      <view wx:for="{{species.care_params}}" wx:for-item="v" wx:for-index="k" class="param-cell">
-        <text class="param-label">{{k}}</text>
-        <text class="param-value">{{v}}</text>
+  <!-- 品系 Tab -->
+  <view wx:if="{{detailTab=='morphs' && morphs}}">
+    <!-- 基因 -->
+    <view class="card" wx:if="{{morphs.genes && morphs.genes.length}}">
+      <text class="section-title">🧬 已收录基因 ({{morphs.genes.length}})</text>
+      <view class="gene-list">
+        <view class="gene-item" wx:for="{{morphs.genes}}" wx:for-item="g" wx:key="gene_id">
+          <view class="gi-left">
+            <text class="gi-symbol">{{g.gene_symbol}}</text>
+            <text class="gi-name">{{g.gene_name_cn||g.gene_name}}</text>
+          </view>
+          <view class="gi-right">
+            <text class="gene-inherit {{g.inheritance}}">{{g.inheritance=='recessive'?'隐性':g.inheritance=='dominant'?'显性':g.inheritance=='codominant'?'共显':'多基因'}}</text>
+            <text class="gene-cat">{{g.category}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 组合 -->
+    <view class="card" wx:if="{{morphs.combos && morphs.combos.length}}">
+      <text class="section-title">🎨 经典组合品系 ({{morphs.combos.length}})</text>
+      <view class="combo-list">
+        <view class="combo-item" wx:for="{{morphs.combos}}" wx:for-item="c" wx:key="combo_id">
+          <view class="ci-header">
+            <text class="ci-name">{{c.combo_name_cn||c.combo_name}}</text>
+            <text class="ci-formula">{{c.combo_formula}}</text>
+          </view>
+          <text class="ci-desc" wx:if="{{c.description}}">{{c.description}}</text>
+        </view>
       </view>
     </view>
   </view>
