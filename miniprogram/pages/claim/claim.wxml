@@ -1,12 +1,43 @@
 <view class="pg">
-  <!-- 加载中 -->
+  <!-- ═══ 加载 ═══ -->
   <view wx:if="{{loading}}" class="loading-zone">
     <view class="spinner"></view>
-    <text class="loading-text">正在领取...</text>
+    <text class="loading-text">{{isHost ? '加载中...' : '正在领取...'}}</text>
   </view>
 
-  <!-- 领到了 -->
-  <view wx:if="{{!loading && code}}" class="success-zone">
+  <!-- ═══ 达人模式 ═══ -->
+  <view wx:if="{{!loading && isHost}}" class="host-zone">
+    <text class="icon">🎁</text>
+    <text class="title">你的邀请码批次</text>
+    <text class="subtitle">{{createdBy}} · {{total}}个免费名额</text>
+
+    <view class="stat-row">
+      <view class="stat-item">
+        <text class="stat-num">{{remaining}}</text>
+        <text class="stat-label">剩余</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-num">{{used}}</text>
+        <text class="stat-label">已领</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-num">{{total}}</text>
+        <text class="stat-label">总计</text>
+      </view>
+    </view>
+
+    <view wx:if="{{allGone}}" class="notice-gone">
+      <text>🎉 已全部抢完！</text>
+    </view>
+
+    <button class="btn-gold" open-type="share" style="margin-top:24px">
+      📤 分享到群（还剩{{remaining}}个）
+    </button>
+    <text class="hint">群友点卡片自动领码，先到先得</text>
+  </view>
+
+  <!-- ═══ 用户领到了 ═══ -->
+  <view wx:if="{{!loading && !isHost && code}}" class="success-zone">
     <text class="icon">🎉</text>
     <text class="title">领到了！</text>
     <text class="subtitle" wx:if="{{alreadyClaimed}}">你之前已领过这个码</text>
@@ -24,20 +55,20 @@
     <text class="hint">还剩 {{remaining}} 个名额</text>
   </view>
 
-  <!-- 已抢完 -->
-  <view wx:if="{{!loading && allGone}}" class="empty-zone">
+  <!-- ═══ 已抢完 ═══ -->
+  <view wx:if="{{!loading && !isHost && allGone}}" class="empty-zone">
     <text class="icon">😅</text>
     <text class="title">来晚了！</text>
-    <text class="subtitle">这波10个名额已被抢完</text>
+    <text class="subtitle">这波名额已被抢完</text>
     <text class="hint">关注群消息，下一波马上到</text>
     <button class="btn-outline" bindtap="goHome" style="margin-top:24px">去识龟</button>
   </view>
 
-  <!-- 错误 -->
+  <!-- ═══ 错误 ═══ -->
   <view wx:if="{{!loading && error}}" class="empty-zone">
     <text class="icon">😵</text>
     <text class="title">出错了</text>
     <text class="subtitle">{{error}}</text>
-    <button class="btn-outline" bindtap="doClaim" style="margin-top:24px">重试</button>
+    <button class="btn-outline" bindtap="{{isHost ? 'loadBatchInfo' : 'doClaim'}}" style="margin-top:24px">重试</button>
   </view>
 </view>

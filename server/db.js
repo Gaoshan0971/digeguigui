@@ -232,6 +232,18 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_invite_code ON invite_codes(code);
   CREATE INDEX IF NOT EXISTS idx_invite_batch ON invite_codes(batch_id);
 `)
+
+// 批次元数据表
+db.exec(`
+  CREATE TABLE IF NOT EXISTS invite_batches (
+    batch_id TEXT PRIMARY KEY,
+    created_by TEXT DEFAULT '',
+    total INTEGER DEFAULT 0,
+    share_card_url TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+  )
+`)
+console.log('[db] Invite codes table ready');
 console.log('[db] Invite codes table ready');
 
 // ==================== Migration: Provenance v1 ====================

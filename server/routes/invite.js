@@ -69,6 +69,12 @@ function register(app) {
       });
     }
 
+    // 保存批次元数据
+    if (shareCardUrl) {
+      db.prepare('INSERT OR REPLACE INTO invite_batches (batch_id, created_by, total, share_card_url) VALUES (?, ?, ?, ?)')
+        .run(batchId, created_by, count, shareCardUrl);
+    }
+
     res.json({
       ok: true,
       data: {
@@ -158,6 +164,9 @@ function register(app) {
       return res.json({ ok: false, error: '批次不存在' });
     }
 
+    // 取批次元数据
+    const batch = db.prepare('SELECT share_card_url, created_by FROM invite_batches WHERE batch_id = ?').get(batchId);
+
     res.json({
       ok: true,
       data: {
@@ -165,7 +174,9 @@ function register(app) {
         total: total.cnt,
         used: used.cnt,
         remaining,
-        all_gone: remaining === 0
+        all_gone: remaining === 0,
+        share_card_url: batch ? batch.share_card_url : '',
+        created_by: batch ? batch.created_by : ''
       }
     });
   });

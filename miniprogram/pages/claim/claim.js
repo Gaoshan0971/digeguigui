@@ -3,20 +3,52 @@ const app = getApp();
 Page({
   data: {
     batchId: '',
+    isHost: false,
     loading: true,
     code: '',
     alreadyClaimed: false,
     allGone: false,
     remaining: 0,
-    error: ''
+    error: '',
+    // host mode fields
+    shareCardUrl: '',
+    total: 0,
+    used: 0,
+    createdBy: ''
   },
 
   onLoad(opt) {
     const batchId = opt.batch_id || '';
-    this.setData({ batchId });
-    this.doClaim();
+    const isHost = opt.role === 'host';
+    this.setData({ batchId, isHost });
+
+    if (isHost) {
+      this.loadBatchInfo();
+    } else {
+      this.doClaim();
+    }
   },
 
+  // ── 达人模式：加载批次信息 ──
+  async loadBatchInfo() {
+    this.setData({ loading: true });
+    try {
+      const data = await app.request('/api/invite-codes/batch/' + this.data.batchId);
+      this.setData({
+        total: data.total,
+        used: data.used,
+        remaining: data.remaining,
+        allGone: data.all_gone,
+        shareCardUrl: data.share_card_url ? app.globalData.API + data.share_card_url : '',
+        createdBy: data.created_by || '',
+        loading: false
+      });
+    } catch (e) {
+      this.setData({ error: '加载失败', loading: false });
+    }
+  },
+
+  // ── 用户模式：自动领码 ──
   async doClaim() {
     this.setData({ loading: true, error: '', code: '', allGone: false });
     try {
@@ -31,7 +63,6 @@ Page({
         remaining: data.remaining || 0,
         loading: false
       });
-      // 存到本地，防止丢失
       if (data.code) wx.setStorageSync('claimed_code_' + this.data.batchId, data.code);
     } catch (e) {
       const err = typeof e === 'string' ? e : (e.message || '网络错误');
@@ -51,7 +82,6 @@ Page({
   },
 
   goProvenance() {
-    // 带上邀请码，跳转到领证页
     wx.navigateTo({
       url: '/pages/upload/upload?intent=provenance&invite_code=' + this.data.code
     });
@@ -59,5 +89,15 @@ Page({
 
   goHome() {
     wx.switchTab({ url: '/pages/identify/identify' });
+  },
+
+  // ── 分享（达人模式） ──
+  onShareAppMessage() {
+    if (!this.data.isHost) return {};
+    return {
+      title: '尊敬的爬圈大佬，滴个龟龟免费赠送您10个爬宠身份证名额！',
+      path: '/pages/claim/claim?batch_id=' + this.data.batchId,
+      imageUrl: this.data.shareCardUrl || ''
+    };
   }
 });

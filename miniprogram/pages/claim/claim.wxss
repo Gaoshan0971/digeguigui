@@ -8,12 +8,44 @@
   background: #F7F4EF;
 }
 
-.loading-zone, .success-zone, .empty-zone {
+.loading-zone, .success-zone, .empty-zone, .host-zone {
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
+}
+
+.stat-row {
+  display: flex;
+  gap: 32px;
+  margin: 16px 0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-num {
+  font-size: 32px;
+  font-weight: 900;
+  color: #d4a853;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #8a9a8a;
+  margin-top: 4px;
+}
+
+.notice-gone {
+  background: #2a4a3a;
+  border-radius: 8px;
+  padding: 12px 24px;
+  color: #8ab89a;
+  font-size: 15px;
 }
 
 .icon { font-size: 56px; }
