@@ -345,7 +345,7 @@ module.exports.register = function (app) {
       biometric_model: 'resnet50_v1',
       feature_dim: 2048,
       sex: 'unknown',
-      breeder_id: breeder ? breeder.id : 0,
+      breeder_id: breeder ? breeder.id : null,
       payment_method: paymentMethod
     });
 
