@@ -3,6 +3,7 @@
     "pages/identify/identify",
     "pages/gene/gene",
     "pages/my/my",
+    "pages/claim/claim",
     "pages/species-detail/species-detail",
     "pages/collection-detail/collection-detail",
     "pages/upload/upload",

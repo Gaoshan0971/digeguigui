@@ -1,0 +1,43 @@
+<view class="pg">
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="loading-zone">
+    <view class="spinner"></view>
+    <text class="loading-text">正在领取...</text>
+  </view>
+
+  <!-- 领到了 -->
+  <view wx:if="{{!loading && code}}" class="success-zone">
+    <text class="icon">🎉</text>
+    <text class="title">领到了！</text>
+    <text class="subtitle" wx:if="{{alreadyClaimed}}">你之前已领过这个码</text>
+    <text class="subtitle" wx:else>这是你的免费领证码</text>
+
+    <view class="code-card">
+      <text class="code-text">{{code}}</text>
+    </view>
+
+    <view class="btn-row">
+      <button class="btn-outline" bindtap="copyCode">📋 复制</button>
+      <button class="btn-gold" bindtap="goProvenance">📜 去上户口</button>
+    </view>
+
+    <text class="hint">还剩 {{remaining}} 个名额</text>
+  </view>
+
+  <!-- 已抢完 -->
+  <view wx:if="{{!loading && allGone}}" class="empty-zone">
+    <text class="icon">😅</text>
+    <text class="title">来晚了！</text>
+    <text class="subtitle">这波10个名额已被抢完</text>
+    <text class="hint">关注群消息，下一波马上到</text>
+    <button class="btn-outline" bindtap="goHome" style="margin-top:24px">去识龟</button>
+  </view>
+
+  <!-- 错误 -->
+  <view wx:if="{{!loading && error}}" class="empty-zone">
+    <text class="icon">😵</text>
+    <text class="title">出错了</text>
+    <text class="subtitle">{{error}}</text>
+    <button class="btn-outline" bindtap="doClaim" style="margin-top:24px">重试</button>
+  </view>
+</view>

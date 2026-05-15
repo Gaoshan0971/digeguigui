@@ -49,9 +49,9 @@ function register(app) {
           py.stdin.write(JSON.stringify({
             image_base64: dummyImg,
             species_name: '免费领证',
-            title: '10个免费上户口名额！',
-            subtitle: '码在群里 · 先到先得 · 可转让',
-            footer: `批次 ${batchId} · 10个名额 · 每人限一码`,
+            title: '尊敬的爬圈大佬',
+            subtitle: '滴个龟龟免费赠送您10个爬宠身份证名额',
+            footer: '快给宝贝上个户口吧！先抢先得！',
             brand: '滴个龟龟 · 达人邀请'
           }));
           py.stdin.end();
@@ -75,7 +75,9 @@ function register(app) {
         batch_id: batchId,
         codes,
         created_by,
-        share_card_url: shareCardUrl
+        share_card_url: shareCardUrl,
+        share_path: `/pages/claim/claim?batch_id=${batchId}`,
+        share_title: '尊敬的爬圈大佬'
       }
     });
   });
@@ -165,6 +167,40 @@ function register(app) {
         remaining,
         all_gone: remaining === 0
       }
+    });
+  });
+
+  // POST /api/invite-codes/claim — 一键领码（自动分配下一个可用码）
+  app.post('/api/invite-codes/claim', (req, res) => {
+    const { batch_id, token = '' } = req.body || {};
+    if (!batch_id) return res.status(400).json({ ok: false, error: '缺少批次ID' });
+
+    // 如果该用户已领过，返回同一个码（防刷新丢失）
+    if (token) {
+      const existing = db.prepare(
+        "SELECT code FROM invite_codes WHERE batch_id = ? AND used_by = ? AND used_at != ''"
+      ).get(batch_id, token);
+      if (existing) {
+        return res.json({ ok: true, data: { code: existing.code, already_claimed: true } });
+      }
+    }
+
+    // 领下一个未使用的码（原子操作）
+    const row = db.prepare(
+      "SELECT code_id, code FROM invite_codes WHERE batch_id = ? AND used_at = '' ORDER BY code_id LIMIT 1"
+    ).get(batch_id);
+
+    if (!row) {
+      return res.json({ ok: false, error: '已抢完', all_gone: true });
+    }
+
+    db.prepare(
+      "UPDATE invite_codes SET used_by = ?, used_at = datetime('now','localtime') WHERE code_id = ?"
+    ).run(token || 'claimant', row.code_id);
+
+    res.json({
+      ok: true,
+      data: { code: row.code, already_claimed: false }
     });
   });
 }

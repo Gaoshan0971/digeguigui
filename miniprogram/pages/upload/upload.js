@@ -10,6 +10,15 @@ Page({
     if (opt.species_id) this.setData({ speciesId: opt.species_id });
     if (opt.species_name) this.setData({ speciesName: opt.species_name });
     if (opt.intent) this.setData({ intent: opt.intent });
+    // 从领码页跳转过来，自动填入邀请码
+    if (opt.invite_code) {
+      this.setData({
+        inviteCode: opt.invite_code,
+        inviteVerified: true,
+        intent: 'provenance',
+        showInviteCode: true
+      });
+    }
     app.request('/api/species', {data:{limit:50}}).then(data => this.setData({speciesList:data.list}));
   },
   chooseImage() {

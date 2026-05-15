@@ -1,0 +1,81 @@
+.pg {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background: #F7F4EF;
+}
+
+.loading-zone, .success-zone, .empty-zone {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon { font-size: 56px; }
+.title { font-size: 24px; font-weight: 700; color: #1a3a2a; }
+.subtitle { font-size: 15px; color: #6a7a6a; }
+
+.hint {
+  font-size: 13px;
+  color: #a0b0a0;
+  margin-top: 8px;
+}
+
+.code-card {
+  background: linear-gradient(135deg, #1a3a2a, #0d2518);
+  border-radius: 16px;
+  padding: 24px 40px;
+  margin: 16px 0;
+  border: 2px solid #d4a853;
+}
+
+.code-text {
+  font-size: 36px;
+  font-weight: 900;
+  color: #d4a853;
+  letter-spacing: 6px;
+  font-family: 'Courier New', monospace;
+}
+
+.btn-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.btn-outline, .btn-gold {
+  padding: 12px 28px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+}
+
+.btn-outline {
+  background: transparent;
+  color: #B8956A;
+  border: 1.5px solid #B8956A;
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, #d4a853, #c49a43);
+  color: #1a3a2a;
+}
+
+.loading-text { font-size: 14px; color: #a0b0a0; }
+
+.spinner {
+  width: 32px; height: 32px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #B8956A;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  margin-bottom: 8px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
