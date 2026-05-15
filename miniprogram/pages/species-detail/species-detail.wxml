@@ -31,7 +31,7 @@
     <view class="card" wx:if="{{species.care_params}}">
       <text class="section-title">📋 饲养参数</text>
       <view class="param-grid">
-        <view wx:for="{{species.care_params}}" wx:for-item="v" wx:for-index="k" class="param-cell">
+        <view wx:for="{{species.care_params}}" wx:for-item="v" wx:for-index="k" wx:key="k" class="param-cell">
           <text class="param-label">{{k}}</text>
           <text class="param-value">{{v}}</text>
         </view>

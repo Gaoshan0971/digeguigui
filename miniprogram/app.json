@@ -9,7 +9,9 @@
     "pages/upload/upload",
     "pages/breeding-detail/breeding-detail",
     "pages/breeder/breeder",
-    "pages/morph-id/morph-id"
+    "pages/morph-id/morph-id",
+    "pages/appraise/appraise",
+    "pages/breeding/breeding"
   ],
   "window": {
     "navigationBarBackgroundColor": "#B8956A",
