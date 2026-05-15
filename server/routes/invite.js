@@ -49,9 +49,9 @@ function register(app) {
           py.stdin.write(JSON.stringify({
             image_base64: dummyImg,
             species_name: '免费领证',
-            title: '尊敬的爬圈大佬',
-            subtitle: '滴个龟龟免费赠送您10个爬宠身份证名额',
-            footer: '快给您的宝贝上个户口吧！感谢支持！',
+            title: '10个免费上户口名额！',
+            subtitle: '码在群里 · 先到先得 · 可转让',
+            footer: `批次 ${batchId} · 10个名额 · 每人限一码`,
             brand: '滴个龟龟 · 达人邀请'
           }));
           py.stdin.end();
@@ -142,6 +142,29 @@ function register(app) {
     res.json({
       ok: true,
       data: { code, batch_id: row.batch_id, message: '核销成功 · 免费领证已激活' }
+    });
+  });
+
+  // GET /api/invite-codes/batch/:batchId — 公开查批次余额
+  app.get('/api/invite-codes/batch/:batchId', (req, res) => {
+    const batchId = req.params.batchId;
+    const total = db.prepare('SELECT COUNT(*) as cnt FROM invite_codes WHERE batch_id = ?').get(batchId);
+    const used = db.prepare("SELECT COUNT(*) as cnt FROM invite_codes WHERE batch_id = ? AND used_at != ''").get(batchId);
+    const remaining = total.cnt - used.cnt;
+
+    if (total.cnt === 0) {
+      return res.json({ ok: false, error: '批次不存在' });
+    }
+
+    res.json({
+      ok: true,
+      data: {
+        batch_id: batchId,
+        total: total.cnt,
+        used: used.cnt,
+        remaining,
+        all_gone: remaining === 0
+      }
     });
   });
 }
