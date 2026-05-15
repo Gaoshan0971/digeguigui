@@ -7,7 +7,8 @@ Page({
     loading: false,
     error: '',
     result: null,
-    cameraReady: false
+    cameraReady: false,
+    shareImageUrl: ''
   },
 
   onReady() {
@@ -76,6 +77,10 @@ Page({
 
       this.setData({ result: data, loading: false });
       wx.hideLoading();
+
+      // 保存原始图片用于生成分享卡
+      this._lastBase64 = base64;
+      this.buildShareCard();
     } catch (e) {
       this.setData({
         error: typeof e === 'string' ? e : '识别失败，请确保照片清晰',
@@ -105,12 +110,39 @@ Page({
     }
   },
 
+  // 生成分享卡（识别成功后调用）
+  async buildShareCard() {
+    const r = this.data.result;
+    if (!r || !r.species) return;
+    try {
+      const data = await app.request('/api/identify/share-card', {
+        method: 'POST',
+        data: {
+          image_base64: this._lastBase64,
+          species_name: r.species.name_cn,
+          confidence: r.species.ai_confidence || 0,
+          engine: r.engine || '',
+          difficulty: r.difficultyStars || '',
+          family: r.species.family || ''
+        }
+      });
+      this.setData({ shareImageUrl: app.globalData.API + data.image_url });
+    } catch (e) {
+      console.log('分享卡生成失败:', e);
+    }
+  },
+
   // 分享
   onShareAppMessage() {
     const s = this.data.result && this.data.result.species;
-    return {
-      title: s ? `我用滴个龟龟识别了一只${s.name_cn}！🐢` : '滴个龟龟 - 拍照识龟',
+    const title = s ? `我用滴个龟龟识别了一只${s.name_cn}！🐢` : '滴个龟龟 - 拍照识龟';
+    const shareData = {
+      title,
       path: '/pages/identify/identify'
     };
+    if (this.data.shareImageUrl) {
+      shareData.imageUrl = this.data.shareImageUrl;
+    }
+    return shareData;
   }
 });

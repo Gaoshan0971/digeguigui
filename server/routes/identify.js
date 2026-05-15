@@ -1,5 +1,10 @@
-// routes/identify.js — AI 拍照识龟
+// routes/identify.js — AI 拍照识龟（本地模型 + 混元兜底）
 const db = require('../db');
+const { spawn } = require('child_process');
+const path = require('path');
+
+const INFER_SCRIPT = path.join(__dirname, '..', '..', 'scripts', 'turtle_infer.py');
+const PYTHON = '/usr/bin/python3';
 
 function register(app) {
 
@@ -9,24 +14,218 @@ function register(app) {
     if (!image_base64) return res.status(400).json({ ok: false, error: '请上传图片' });
 
     try {
-      // 调用混元视觉模型识别
-      const result = await callHunyuanVision(image_base64);
-      // 匹配本地品种数据
-      const enriched = await enrichWithSpeciesDB(result);
-      res.json({ ok: true, data: enriched });
+      // ── 第一步：本地模型推理 ──
+      let localResult = null;
+      try {
+        localResult = await callLocalModel(image_base64);
+      } catch (e) {
+        console.log('本地模型不可用，降级到混元:', e.message);
+      }
+
+      // ── 判断是否够置信 ──
+      if (localResult && localResult.length > 0 && localResult[0].confidence >= 50) {
+        // 本地模型够准，直接用
+        const enriched = await enrichLocalResult(localResult);
+        return res.json({
+          ok: true,
+          data: { ...enriched, engine: 'efficientnet' }
+        });
+      }
+
+      // ── 降级：混元视觉 ──
+      const hunyuanResult = await callHunyuanVision(image_base64);
+      const enriched = await enrichWithSpeciesDB(hunyuanResult);
+      // 如果本地有结果但不够置信，作为混元的参考
+      if (localResult?.[0]) {
+        enriched.local_hint = localResult[0].species;
+      }
+      res.json({
+        ok: true,
+        data: { ...enriched, engine: 'hunyuan' }
+      });
+
     } catch (e) {
       console.error('AI识别失败:', e.message);
       res.status(500).json({ ok: false, error: '识别服务暂时不可用，请稍后重试' });
     }
   });
+
+  // ───── 反馈闭环 ─────
+
+  // POST /api/identify/feedback — 用户确认/纠错
+  app.post('/api/identify/feedback', (req, res) => {
+    const {
+      image_base64, model_species_id, model_confidence, model_top3,
+      engine, feedback_type, user_species_id = null, token = ''
+    } = req.body || {};
+
+    if (!image_base64) return res.status(400).json({ ok: false, error: '缺少图片' });
+    if (!['confirmed', 'corrected', 'rejected'].includes(feedback_type)) {
+      return res.status(400).json({ ok: false, error: 'feedback_type 必须是 confirmed/corrected/rejected' });
+    }
+    if (feedback_type === 'corrected' && !user_species_id) {
+      return res.status(400).json({ ok: false, error: '纠错时需指定正确的品种ID' });
+    }
+
+    const finalSpeciesId = feedback_type === 'rejected' ? null
+      : feedback_type === 'corrected' ? user_species_id : model_species_id;
+
+    const result = db.prepare(`
+      INSERT INTO identify_feedback (user_token, image_base64, model_species_id,
+        model_confidence, model_top3, engine, user_species_id, feedback_type)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(token, image_base64, model_species_id || null, model_confidence || 0,
+      JSON.stringify(model_top3 || []), engine || '', finalSpeciesId, feedback_type);
+
+    res.json({ ok: true, data: { feedback_id: result.lastInsertRowid } });
+  });
+
+  // GET /api/identify/feedback/stats — 管理端统计
+  app.get('/api/identify/feedback/stats', (req, res) => {
+    const { admin_key = '' } = req.query;
+    if (admin_key !== 'turtle-admin-2026') return res.status(403).json({ ok: false, error: '无权访问' });
+
+    const total = db.prepare('SELECT COUNT(*) as cnt FROM identify_feedback').get();
+    const byType = db.prepare('SELECT feedback_type, COUNT(*) as cnt FROM identify_feedback GROUP BY feedback_type').all();
+    const bySpecies = db.prepare(`
+      SELECT s.name_cn, COUNT(*) as cnt FROM identify_feedback f
+      JOIN species s ON s.species_id = f.user_species_id
+      WHERE f.user_species_id IS NOT NULL
+      GROUP BY f.user_species_id ORDER BY cnt DESC LIMIT 30
+    `).all();
+    const recent = db.prepare(`
+      SELECT f.feedback_id, f.feedback_type, s.name_cn, f.model_confidence, f.engine, f.created_at
+      FROM identify_feedback f LEFT JOIN species s ON s.species_id = COALESCE(f.user_species_id, f.model_species_id)
+      ORDER BY f.created_at DESC LIMIT 50
+    `).all();
+
+    res.json({ ok: true, data: { total: total.cnt, by_type: byType, by_species: bySpecies, recent } });
+  });
+
+  // GET /api/identify/feedback/export — 导出训练集
+  app.get('/api/identify/feedback/export', (req, res) => {
+    const { admin_key = '', feedback_type = 'confirmed,corrected', limit = 500 } = req.query;
+    if (admin_key !== 'turtle-admin-2026') return res.status(403).json({ ok: false, error: '无权访问' });
+
+    const types = feedback_type.split(',').map(t => t.trim());
+    const placeholders = types.map(() => '?').join(',');
+    const rows = db.prepare(`
+      SELECT f.feedback_id, f.image_base64, s.name_cn, s.species_id, f.feedback_type
+      FROM identify_feedback f JOIN species s ON s.species_id = f.user_species_id
+      WHERE f.feedback_type IN (${placeholders}) ORDER BY f.created_at DESC LIMIT ?
+    `).all(...types, Number(limit));
+
+    res.json({ ok: true, data: { count: rows.length, items: rows } });
+  });
+
+  // ───── 分享卡生成 ─────
+
+  const { spawn: spawnSC } = require('child_process');
+  const SHARE_CARD_SCRIPT = path.join(__dirname, '..', '..', 'scripts', 'share_card.py');
+
+  // POST /api/identify/share-card — 生成微信分享卡图片
+  app.post('/api/identify/share-card', (req, res) => {
+    const { image_base64, species_name, confidence, engine, difficulty, family } = req.body || {};
+    if (!image_base64) return res.status(400).json({ ok: false, error: '缺少图片' });
+
+    const py = spawnSC(PYTHON, [SHARE_CARD_SCRIPT]);
+    let stdout = '', stderr = '';
+
+    py.stdin.write(JSON.stringify({
+      image_base64, species_name: species_name || '未知品种',
+      confidence: confidence || 0, engine: engine || '',
+      difficulty: difficulty || '', family: family || ''
+    }));
+    py.stdin.end();
+
+    py.stdout.on('data', d => stdout += d);
+    py.stderr.on('data', d => stderr += d);
+
+    py.on('close', code => {
+      if (code !== 0) {
+        console.error('分享卡生成失败:', stderr);
+        return res.status(500).json({ ok: false, error: '生成失败' });
+      }
+      try {
+        const result = JSON.parse(stdout);
+        if (result.ok) {
+          res.json({ ok: true, data: { image_url: result.url } });
+        } else {
+          res.status(500).json({ ok: false, error: result.error });
+        }
+      } catch {
+        res.status(500).json({ ok: false, error: '解析失败' });
+      }
+    });
+
+    py.on('error', e => {
+      res.status(500).json({ ok: false, error: e.message });
+    });
+  });
 }
 
-// ========== 腾讯混元视觉 API ==========
+// ========== 本地 EfficientNet 模型 ==========
+
+function callLocalModel(base64Image) {
+  return new Promise((resolve, reject) => {
+    const py = spawn(PYTHON, [INFER_SCRIPT]);
+    let stdout = '', stderr = '';
+
+    py.stdin.write(JSON.stringify({ image_base64: base64Image }));
+    py.stdin.end();
+
+    py.stdout.on('data', d => stdout += d);
+    py.stderr.on('data', d => stderr += d);
+
+    py.on('close', code => {
+      if (code !== 0) return reject(new Error(stderr || `exit ${code}`));
+      try {
+        const result = JSON.parse(stdout);
+        resolve(result.data || []);
+      } catch {
+        reject(new Error('模型返回格式异常'));
+      }
+    });
+
+    py.on('error', reject);
+  });
+}
+
+// ========== 本地结果匹配数据库 ==========
+
+async function enrichLocalResult(predictions) {
+  const candidates = [];
+  let topSpecies = null;
+
+  for (const pred of predictions) {
+    // 模糊匹配中文名
+    const species = db.prepare(`
+      SELECT * FROM species
+      WHERE name_cn LIKE ? OR name_latin LIKE ?
+      LIMIT 1
+    `).get(`%${pred.species}%`, `%${pred.species}%`);
+
+    if (species && !topSpecies) {
+      try { species.traits = JSON.parse(species.traits); } catch {}
+      try { species.care_params = JSON.parse(species.care_params); } catch {}
+      topSpecies = { ...species, ai_confidence: pred.confidence };
+    }
+
+    candidates.push({
+      name_cn: pred.species,
+      confidence: pred.confidence,
+      species_id: species ? species.species_id : null
+    });
+  }
+
+  return { species: topSpecies, candidates };
+}
+
+// ========== 腾讯混元视觉 API (兜底) ==========
 
 const HUNYUAN_KEY = 'sk-9W9gW9vKBlRumlofaDl3g104nKh8iTsQVrhzirEx2lo2lGvU';
 
 async function callHunyuanVision(base64Image) {
-  // 去掉 data:image/...;base64, 前缀
   const pureBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
 
   const prompt = `你是一个龟类识别专家。请识别这张图片中的龟是什么品种。
@@ -43,9 +242,7 @@ async function callHunyuanVision(base64Image) {
   ]
 }
 
-如果图片中不是龟或无法识别，top_species 返回 "无法识别"，confidence 返回 0。
-
-目前数据库中有以下56个龟种可供参考：巴西龟、花龟、草龟、东锦龟、中华鳖、剃刀蛋龟、四爪陆龟、圆澳龟、地中海陆龟、地图龟、安布闭壳龟、巨头蛋龟、希拉里侧颈龟、斑点池龟、日本石龟、果核蛋龟、珍珠鳖、白唇蛋龟、红腿陆龟、红面蛋龟、缅甸陆龟、缘翘陆龟、虎纹蛋龟、蛇颈龟、西锦龟、西非侧颈龟、赫曼陆龟、黄喉拟水龟、齿缘龟、东部箱龟、佛罗里达鳖、印度星龟、墨西哥蛋龟、枫叶龟、猪鼻龟、窄桥蛋龟、缅甸星龟、萨尔文蛋龟、豹纹陆龟、辐射陆龟、金钱龟、钻纹龟、锯缘摄龟、鳄龟、黄头侧颈龟、黄缘闭壳龟、黄腿陆龟、大鳄龟、枯叶龟、苏卡达陆龟、靴脚陆龟、饼干陆龟、鹰嘴龟、黄额闭壳龟、黑靴陆龟、亚达伯拉象龟。如果是其他品种也请正常识别。`;
+如果图片中不是龟或无法识别，top_species 返回 "无法识别"，confidence 返回 0。`;
 
   const resp = await fetch('https://api.hunyuan.cloud.tencent.com/v1/chat/completions', {
     method: 'POST',
@@ -75,29 +272,21 @@ async function callHunyuanVision(base64Image) {
   const data = await resp.json();
   const content = data.choices?.[0]?.message?.content || '';
 
-  // 解析返回的 JSON
   let parsed;
   try {
-    // 处理可能的 markdown 代码块
     const clean = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
     parsed = JSON.parse(clean);
   } catch {
-    // 尝试从文本中提取
     parsed = { top_species: '无法识别', latin_name: '', confidence: 0, alternatives: [] };
   }
 
   return parsed;
 }
 
-// ========== 匹配本地品种数据库 ==========
+// ========== 混元结果匹配数据库 ==========
 
 async function enrichWithSpeciesDB(aiResult) {
-  const result = {
-    candidates: [],
-    species: null
-  };
-
-  // 收集所有候选
+  const result = { candidates: [], species: null };
   const candidates = [];
 
   if (aiResult.top_species && aiResult.top_species !== '无法识别') {
@@ -119,9 +308,7 @@ async function enrichWithSpeciesDB(aiResult) {
     }
   }
 
-  // 尝试在数据库中匹配
   for (const cand of candidates) {
-    // 模糊匹配品种名
     const species = db.prepare(`
       SELECT * FROM species
       WHERE name_cn LIKE ? OR name_cn LIKE ?
@@ -129,12 +316,9 @@ async function enrichWithSpeciesDB(aiResult) {
     `).get(`%${cand.name_cn}%`, `%${cand.name_cn.replace(/龟$/, '')}%`);
 
     if (species) {
-      // 解析 JSON 字段
       try { species.traits = JSON.parse(species.traits); } catch {}
       try { species.care_params = JSON.parse(species.care_params); } catch {}
-
       if (!result.species) {
-        // 第一个匹配的作为主结果
         result.species = { ...species, ai_confidence: cand.confidence };
       }
     }

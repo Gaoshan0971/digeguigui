@@ -172,6 +172,51 @@ for (const col of newColumns) {
   }
 }
 
+// ==================== Migration: 品鉴标注训练数据 ====================
+db.exec(`
+  CREATE TABLE IF NOT EXISTS labeled_appraisals (
+    label_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    species_id INTEGER NOT NULL,
+    image_url TEXT NOT NULL,
+    shell_score INTEGER NOT NULL CHECK(shell_score BETWEEN 1 AND 10),
+    head_score INTEGER NOT NULL CHECK(head_score BETWEEN 1 AND 10),
+    color_score INTEGER NOT NULL CHECK(color_score BETWEEN 1 AND 10),
+    body_score INTEGER NOT NULL CHECK(body_score BETWEEN 1 AND 10),
+    health_score INTEGER NOT NULL CHECK(health_score BETWEEN 1 AND 10),
+    overall_grade TEXT NOT NULL,
+    market_range TEXT DEFAULT '',
+    comment TEXT DEFAULT '',
+    labeled_by TEXT DEFAULT 'user',
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (species_id) REFERENCES species(species_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_labels_species ON labeled_appraisals(species_id);
+`)
+console.log('[db] Labeling table ready');
+
+// ==================== Migration: 识龟反馈训练数据 ====================
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS identify_feedback (
+    feedback_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_token TEXT DEFAULT '',
+    image_base64 TEXT NOT NULL,
+    model_species_id INTEGER,
+    model_confidence REAL DEFAULT 0,
+    model_top3 TEXT DEFAULT '[]',
+    engine TEXT DEFAULT '',
+    user_species_id INTEGER,
+    feedback_type TEXT NOT NULL CHECK(feedback_type IN ('confirmed','corrected','rejected')),
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (model_species_id) REFERENCES species(species_id),
+    FOREIGN KEY (user_species_id) REFERENCES species(species_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_feedback_type ON identify_feedback(feedback_type);
+  CREATE INDEX IF NOT EXISTS idx_feedback_user ON identify_feedback(user_token);
+  CREATE INDEX IF NOT EXISTS idx_feedback_species ON identify_feedback(user_species_id);
+`)
+console.log('[db] Identify feedback table ready');
+
 // ==================== Migration: Provenance v1 ====================
 const fs = require('fs');
 const provPath = path.join(__dirname, '..', 'data', 'provenance_schema.sql');
