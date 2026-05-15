@@ -1,29 +1,55 @@
 <view class="pg">
-  <view class="uh">
-    <text class="uh-title">{{intent=='provenance' ? '📜 上户口 · 领证' : '晒我的爬宠'}}</text>
-    <text class="text-muted" wx:if="{{intent=='provenance' && speciesName}}" style="margin-top:8px">品种：{{speciesName}}</text>
-  </view>
-  <view class="img-box" bindtap="chooseImage">
-    <image wx:if="{{imgUrl}}" src="{{imgUrl}}" mode="aspectFill" class="up-img" />
-    <view wx:else class="img-placeholder">
-      <text style="font-size:40px">{{intent=='provenance' ? '🆔' : '📸'}}</text>
-      <text class="text-muted">{{intent=='provenance' ? '拍一张清晰的龟背纹路' : '点击选择图片'}}</text>
+  <!-- 未提交：表单 -->
+  <block wx:if="{{!submitted}}">
+    <view class="uh">
+      <text class="uh-title">{{intent=='provenance' ? '📜 上户口 · 领证' : '晒我的爬宠'}}</text>
+      <text class="text-muted" wx:if="{{intent=='provenance' && speciesName}}" style="margin-top:8px">品种：{{speciesName}}</text>
     </view>
-  </view>
-  <view class="card">
-    <picker wx:if="{{!speciesId}}" mode="selector" range="{{speciesList}}" range-key="name_cn" bindchange="onSpeciesChange">
-      <view class="picker-row"><text>品种</text><text class="text-gold">选择品种 ›</text></view>
-    </picker>
-    <view wx:else class="picker-row">
-      <text>品种</text><text class="text-gold">{{speciesName || '已选择'}}</text>
+    <view class="img-box" bindtap="chooseImage">
+      <image wx:if="{{imgUrl}}" src="{{imgUrl}}" mode="aspectFill" class="up-img" />
+      <view wx:else class="img-placeholder">
+        <text style="font-size:40px">{{intent=='provenance' ? '🆔' : '📸'}}</text>
+        <text class="text-muted">{{intent=='provenance' ? '拍一张清晰的龟背纹路' : '点击选择图片'}}</text>
+      </view>
     </view>
-    <input placeholder="{{intent=='provenance' ? '备注（来源/特征等）' : '描述你的爬宠...'}}" value="{{caption}}" bindinput="e=>this.setData({caption:e.detail.value})" class="inp" />
-    <input placeholder="所在城市" value="{{city}}" bindinput="e=>this.setData({city:e.detail.value})" class="inp" />
-  </view>
-  <button class="{{intent=='provenance' ? 'btn-gold' : 'btn-primary'}}" bindtap="submit">
-    {{intent=='provenance' ? '📜 确认领证 ¥19.9' : '发布到品鉴墙'}}
-  </button>
-  <view wx:if="{{intent=='provenance'}}" class="card" style="text-align:center;margin-top:8px">
+    <view class="card">
+      <picker wx:if="{{!speciesId}}" mode="selector" range="{{speciesList}}" range-key="name_cn" bindchange="onSpeciesChange">
+        <view class="picker-row"><text>品种</text><text class="text-gold">选择品种 ›</text></view>
+      </picker>
+      <view wx:else class="picker-row">
+        <text>品种</text><text class="text-gold">{{speciesName || '已选择'}}</text>
+      </view>
+      <input placeholder="{{intent=='provenance' ? '备注（来源/特征等）' : '描述你的爬宠...'}}" value="{{caption}}" bindinput="e=>this.setData({caption:e.detail.value})" class="inp" />
+      <input placeholder="所在城市" value="{{city}}" bindinput="e=>this.setData({city:e.detail.value})" class="inp" />
+    </view>
+    <button class="{{intent=='provenance' ? 'btn-gold' : 'btn-primary'}}" bindtap="submit">
+      {{intent=='provenance' ? '📜 确认领证 ¥19.9' : '发布到品鉴墙'}}
+    </button>
+  </block>
+
+  <!-- 领证成功：分享引导 -->
+  <block wx:if="{{submitted}}">
+    <view class="uh">
+      <text class="uh-title">🎉 领证成功！</text>
+      <text class="text-muted" style="margin-top:8px">{{speciesName}} 已锚定上链</text>
+    </view>
+    <view class="card" style="text-align:center;padding:32px">
+      <text style="font-size:48px;display:block;margin-bottom:16px">📜</text>
+      <text style="font-size:20px;font-weight:700;color:#d4a853;display:block;margin-bottom:8px">
+        滴个龟龟！刚给我的{{speciesName}}上了户口
+      </text>
+      <text style="font-size:16px;color:#e8e0c8;display:block;margin-bottom:24px">
+        这颜值你们能给打几分？
+      </text>
+      <text style="font-size:11px;color:#6a9a7a;display:block;margin-bottom:24px">
+        🛡️ 出生锚定 · 龟纹AI识别 · 哈希链存证
+      </text>
+    </view>
+    <button class="btn-gold" open-type="share">📤 晒到群里，让他们打分！</button>
+    <button class="btn-outline" bindtap="backHome" style="margin-top:8px">返回首页</button>
+  </block>
+
+  <view wx:if="{{intent=='provenance' && !submitted}}" class="card" style="text-align:center;margin-top:8px">
     <text class="text-muted" style="font-size:12px">🛡️ 出生锚定 · 龟纹AI识别 · 哈希链存证</text>
   </view>
 </view>

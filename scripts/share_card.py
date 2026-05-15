@@ -3,19 +3,18 @@
 import sys, json, base64, io, os, hashlib
 from PIL import Image, ImageDraw, ImageFont
 
-# 配置
 W, H = 500, 400  # 5:4
 OUT_DIR = os.path.join(os.path.dirname(__file__), '..', 'www', 'share-cards')
 FONT = '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc'
-FONT_BOLD = FONT  # 文泉驿粗体用同一字体偏大字号模拟
-QUALITY = 65  # JPEG质量，控制在20KB以内
+QUALITY = 65
 
 os.makedirs(OUT_DIR, exist_ok=True)
 
 
-def create_card(image_base64: str, species_name: str, confidence: float,
-                engine: str, difficulty: str = '', family: str = '') -> str:
-    """生成分享卡片，返回保存路径"""
+def create_card(image_base64, species_name, confidence=0, engine='',
+                difficulty='', family='', title='', subtitle='',
+                footer='', brand='滴个龟龟 · 拍照识龟'):
+    """生成分享卡片，返回保存路径。title/subtitle/footer 为空时按 identify 模式自动生成。"""
 
     # — 加载原图 —
     pure = image_base64
@@ -34,12 +33,10 @@ def create_card(image_base64: str, species_name: str, confidence: float,
     canvas.paste(turtle_img, (0, 0))
 
     # — 底部信息区 (140px高) —
-    draw = ImageDraw.Draw(canvas)
-    # 半透明渐变叠加
     overlay = Image.new('RGBA', (W, 140), (0, 0, 0, 0))
     draw_overlay = ImageDraw.Draw(overlay)
     for y in range(140):
-        alpha = int(180 + 60 * (y / 140))  # 180→240 从上到下略加深
+        alpha = int(180 + 60 * (y / 140))
         draw_overlay.rectangle([(0, y), (W, y + 1)], fill=(13, 37, 24, alpha))
     canvas.paste(overlay, (0, H - 140), overlay)
 
@@ -57,37 +54,49 @@ def create_card(image_base64: str, species_name: str, confidence: float,
     # 顶部装饰线
     draw.rectangle([(20, H - 140), (W - 20, H - 138)], fill='#d4a853')
 
-    # 品种名
     name_y = H - 130
-    draw.text((24, name_y), species_name, fill='#d4a853', font=font_name)
 
-    # 置信度徽章
-    badge_text = f'{confidence:.0f}% 置信度 · {engine}'
-    draw.text((24, name_y + 34), badge_text, fill='#8ab89a', font=font_sub)
+    if title or subtitle:
+        # — provenance / 自定义模式 —
+        display_title = title or species_name
+        draw.text((24, name_y), display_title, fill='#d4a853', font=font_name)
 
-    # 补充信息
-    extra_y = name_y + 58
-    extras = []
-    if difficulty:
-        extras.append(f'饲养难度: {difficulty}')
-    if family:
-        extras.append(f'科属: {family}')
-    if extras:
-        draw.text((24, extra_y), ' · '.join(extras), fill='#6a9a7a', font=font_tag)
+        sub_text = subtitle or '你们能给打几分？'
+        draw.text((24, name_y + 34), sub_text, fill='#e8e0c8', font=font_sub)
 
-    # 右下品牌
-    brand = '滴个龟龟 · 拍照识龟'
-    bbox = draw.textbbox((0, 0), brand, font=font_tag)
-    bw = bbox[2] - bbox[0]
-    draw.text((W - bw - 20, H - 28), brand, fill='#4a7a5a', font=font_tag)
+        if footer:
+            draw.text((24, name_y + 60), footer, fill='#6a9a7a', font=font_tag)
+
+        if brand:
+            bbox = draw.textbbox((0, 0), brand, font=font_tag)
+            bw = bbox[2] - bbox[0]
+            draw.text((W - bw - 20, H - 28), brand, fill='#4a7a5a', font=font_tag)
+    else:
+        # — identify 模式（兼容旧调用）—
+        draw.text((24, name_y), species_name, fill='#d4a853', font=font_name)
+        badge_text = f'{confidence:.0f}% 置信度 · {engine}'
+        draw.text((24, name_y + 34), badge_text, fill='#8ab89a', font=font_sub)
+
+        extra_y = name_y + 58
+        extras = []
+        if difficulty:
+            extras.append(f'饲养难度: {difficulty}')
+        if family:
+            extras.append(f'科属: {family}')
+        if extras:
+            draw.text((24, extra_y), ' · '.join(extras), fill='#6a9a7a', font=font_tag)
+
+        bbox = draw.textbbox((0, 0), brand, font=font_tag)
+        bw = bbox[2] - bbox[0]
+        draw.text((W - bw - 20, H - 28), brand, fill='#4a7a5a', font=font_tag)
 
     # — 保存 —
-    name_hash = hashlib.md5(f'{species_name}{confidence}{image_base64[:64]}'.encode()).hexdigest()[:12]
+    raw = f'{title or species_name}{confidence}{image_base64[:64]}'
+    name_hash = hashlib.md5(raw.encode()).hexdigest()[:12]
     filename = f'{name_hash}.jpg'
     filepath = os.path.join(OUT_DIR, filename)
     canvas.save(filepath, 'JPEG', quality=QUALITY, optimize=True)
 
-    # 如果超20KB，降qual重试
     sz = os.path.getsize(filepath)
     for q in [50, 40, 35]:
         if sz <= 20480:
@@ -99,7 +108,6 @@ def create_card(image_base64: str, species_name: str, confidence: float,
 
 
 def crop_center(img, target_ratio):
-    """中心裁剪到目标宽高比"""
     w, h = img.size
     current = w / h
     if current > target_ratio:
@@ -126,9 +134,12 @@ if __name__ == '__main__':
             confidence=data.get('confidence', 0),
             engine=data.get('engine', ''),
             difficulty=data.get('difficulty', ''),
-            family=data.get('family', '')
+            family=data.get('family', ''),
+            title=data.get('title', ''),
+            subtitle=data.get('subtitle', ''),
+            footer=data.get('footer', ''),
+            brand=data.get('brand', '滴个龟龟 · 拍照识龟')
         )
-        # 返回相对URL路径
         rel = os.path.relpath(filepath, OUT_DIR)
         print(json.dumps({'ok': True, 'url': f'/share-cards/{rel}', 'path': filepath}))
     except Exception as e:
