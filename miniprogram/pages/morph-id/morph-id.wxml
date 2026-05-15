@@ -57,7 +57,7 @@
         <text class="rh-confidence {{matches[0].score >= 80 ? 'high' : matches[0].score >= 50 ? 'mid' : 'low'}}">
           匹配度 {{matches[0].score}}%
         </text>
-      
+      </view>
       <view class="rh-details" wx:if="{{matches[0].formula}}">
         <text class="rh-formula">{{matches[0].formula}}</text>
       </view>

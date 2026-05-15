@@ -122,7 +122,7 @@ page {
   top: 50%;
   transform: translateY(-50%);
   font-size: 16px;
-};
+}
 
 /* ===== 加载 ===== */
 .loading {

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>品鉴标注 · 滴个龟龟</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F7F4EF;color:#2C2416;min-height:100vh;display:flex}
+#sidebar{width:300px;background:#FFF;border-right:1px solid #E8E2D8;padding:20px;overflow-y:auto;flex-shrink:0}
+#sidebar h2{font-size:18px;color:#B8956A;margin-bottom:4px}
+#sidebar .sub{font-size:12px;color:#C4B5A5;margin-bottom:16px}
+#species-list{list-style:none;max-height:calc(100vh - 160px);overflow-y:auto}
+#species-list li{padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between;align-items:center;transition:background .12s;border:1px solid transparent}
+#species-list li:hover{background:#F7F4EF;border-color:#E8E2D8}
+#species-list li.active{background:#B8956A;color:#FFF;border-color:#B8956A}
+#species-list li.done{opacity:.5}
+#species-list li .badge{font-size:11px;padding:1px 6px;border-radius:6px;background:#E8E2D8;color:#2C2416}
+#species-list li.active .badge{background:rgba(255,255,255,.25);color:#FFF}
+
+#main{flex:1;display:flex;flex-direction:column;align-items:center;padding:32px;overflow-y:auto}
+#image-box{width:100%;max-width:520px;aspect-ratio:1;background:#FFF;border-radius:20px;overflow:hidden;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06);display:flex;align-items:center;justify-content:center;position:relative}
+#image-box img{width:100%;height:100%;object-fit:contain}
+#image-box .empty{color:#C4B5A5;font-size:15px;text-align:center;line-height:1.8}
+
+#species-card{width:100%;max-width:520px;background:#FFF;border-radius:16px;padding:16px 20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+#species-card .name{font-size:16px;font-weight:700;color:#B8956A;margin-bottom:4px}
+#species-card .latin{font-size:12px;color:#A09080;margin-bottom:8px}
+#species-card .overview{font-size:13px;color:#2C2416;line-height:1.7;max-height:200px;overflow-y:auto}
+
+#scores{width:100%;max-width:520px;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.score-row{display:flex;flex-direction:column;gap:1px}
+.score-row label{font-size:12px;color:#8B7355;display:flex;justify-content:space-between}
+.score-row label .val{color:#B8956A;font-weight:700;font-size:18px}
+.score-row input[type=range]{-webkit-appearance:none;width:100%;height:5px;border-radius:3px;background:#E8E2D8;outline:none}
+.score-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#B8956A;cursor:pointer;box-shadow:0 2px 6px rgba(184,149,106,.3)}
+
+#grade-display{font-size:36px;font-weight:800;color:#B8956A;margin-bottom:12px}
+#grade-display span{font-size:14px;font-weight:400;color:#8B7355}
+
+#extras{width:100%;max-width:520px;display:flex;gap:10px;margin-bottom:16px}
+#extras input{flex:1;padding:8px 12px;border:1.5px solid #E8E2D8;border-radius:10px;font-size:13px;outline:none;background:#FFF;color:#2C2416}
+#extras input:focus{border-color:#B8956A}
+
+#actions{display:flex;gap:10px}
+#submit-btn,#next-btn{padding:10px 32px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+#submit-btn{background:linear-gradient(135deg,#B8956A,#9A7B52);color:#FFF;box-shadow:0 4px 12px rgba(184,149,106,.3)}
+#submit-btn:hover:not(:disabled){transform:translateY(-1px)}
+#submit-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+#next-btn{background:#FFF;color:#8B7355;border:1.5px solid #E8E2D8}
+#next-btn:hover:not(:disabled){border-color:#B8956A;color:#B8956A}
+#next-btn:disabled{opacity:.35;cursor:not-allowed}
+
+#progress-bar{width:100%;max-width:520px;height:4px;background:#E8E2D8;border-radius:2px;margin-bottom:8px;overflow:hidden}
+#progress-bar div{height:100%;background:#B8956A;border-radius:2px;transition:width .3s}
+#progress-text{font-size:12px;color:#8B7355;margin-bottom:16px}
+
+.key-hint{font-size:11px;color:#C4B5A5;margin-top:16px;text-align:center}
+</style>
+</head>
+<body>
+<aside id="sidebar">
+  <h2>🐢 龟类品鉴</h2>
+  <div class="sub">368种 | 点击品种开始</div>
+  <ul id="species-list"></ul>
+</aside>
+
+<main id="main">
+  <div id="image-box"><div class="empty">← 左侧点品种开始品鉴</div></div>
+  <div id="species-card">
+    <div class="name" id="sp-name"></div>
+    <div class="latin" id="sp-latin"></div>
+    <div class="overview" id="sp-overview"></div>
+  </div>
+  <div id="scores">
+    <div class="score-row"><label>🐚 壳形 Shell <span class="val" id="val-shell">5</span></label><input type="range" min="1" max="10" value="5" id="sc-shell"></div>
+    <div class="score-row"><label>🐢 头部 Head <span class="val" id="val-head">5</span></label><input type="range" min="1" max="10" value="5" id="sc-head"></div>
+    <div class="score-row"><label>🎨 色泽 Color <span class="val" id="val-color">5</span></label><input type="range" min="1" max="10" value="5" id="sc-color"></div>
+    <div class="score-row"><label>📐 体型 Body <span class="val" id="val-body">5</span></label><input type="range" min="1" max="10" value="5" id="sc-body"></div>
+    <div class="score-row" style="grid-column:span 2"><label>💚 健康 Health <span class="val" id="val-health">5</span></label><input type="range" min="1" max="10" value="5" id="sc-health"></div>
+  </div>
+  <div id="grade-display">— <span>品级</span></div>
+  <div id="extras">
+    <input type="text" id="market" placeholder="市场价区间，如 500-800元">
+    <input type="text" id="comment" placeholder="评语 / 备注（可选）">
+  </div>
+  <div id="progress-bar"><div style="width:0%"></div></div>
+  <div id="progress-text"></div>
+  <div id="actions">
+    <button id="submit-btn" disabled>✓ 提交标注</button>
+    <button id="next-btn" disabled>→ 下一品种</button>
+  </div>
+  <div class="key-hint">数字键1-0打该维度分 · Tab切维度 · Enter提交 · → 下一品种</div>
+</main>
+
+<script>
+const API = '/api/v2';
+let currentSpecies = null;
+let labeled = new Set(); // species_ids already labeled
+let totalSpecies = 0;
+
+// ── Sliders ──
+const dims = ['shell','head','color','body','health'];
+const sliders = {}, vals = {};
+dims.forEach(d => {
+  sliders[d] = document.getElementById('sc-'+d);
+  vals[d] = document.getElementById('val-'+d);
+  sliders[d].addEventListener('input', ()=>{ vals[d].textContent=sliders[d].value; updateGrade(); });
+});
+function getScores(){ let s={}; dims.forEach(d=>s[d]=parseInt(sliders[d].value)); return s; }
+function calcGrade(s){ const avg=dims.reduce((a,d)=>a+s[d],0)/5; if(avg>=9)return'S';if(avg>=8)return'A+';if(avg>=7)return'A';if(avg>=5)return'B';return'C'; }
+const G = {S:'极品', 'A+':'上品', A:'良品', B:'中品', C:'普品'};
+function updateGrade(){ const g=calcGrade(getScores()); document.getElementById('grade-display').innerHTML=g+' <span>'+G[g]+'</span>'; }
+
+async function loadLabeled() {
+  const r = await fetch(API+'/labeling/stats');
+  const d = await r.json();
+  // Also load export to know which species_ids are done
+  const r2 = await fetch(API+'/labeling/export');
+  const d2 = await r2.json();
+  d2.data.forEach(row => labeled.add(row.species_id));
+  return d.data.total;
+}
+
+// ── Species list ──
+async function loadSpecies() {
+  const labeledCount = await loadLabeled();
+  const r = await fetch(API+'/species?limit=400&category=龟');
+  const d = await r.json();
+  totalSpecies = d.total || d.data.length;
+  
+  const list = document.getElementById('species-list');
+  list.innerHTML = '';
+  d.data.forEach(s => {
+    const li = document.createElement('li');
+    const done = labeled.has(s.species_id);
+    if (done) li.classList.add('done');
+    li.innerHTML = `${done?'✓ ':''}${s.name_cn} <span class="badge">${s.difficulty||'?'}★</span>`;
+    li.onclick = () => loadSpeciesDetail(s, li);
+    li.dataset.sid = s.species_id;
+    list.appendChild(li);
+  });
+  updateProgress();
+}
+
+function updateProgress() {
+  const pct = totalSpecies ? Math.round(labeled.size/totalSpecies*100) : 0;
+  document.querySelector('#progress-bar div').style.width = pct+'%';
+  document.getElementById('progress-text').textContent = `已标注 ${labeled.size} / ${totalSpecies} 种 (${pct}%)`;
+}
+
+async function loadSpeciesDetail(s, liEl) {
+  document.querySelectorAll('#species-list li').forEach(l=>l.classList.remove('active'));
+  if (liEl) liEl.classList.add('active');
+  currentSpecies = s;
+
+  // Load full detail with overview
+  const r = await fetch(API+'/species/'+s.species_id);
+  const d = await r.json();
+  if (!d.ok) return;
+  const sp = d.data;
+
+  // Image
+  const img = sp.image_url || '';
+  if (img) {
+    document.getElementById('image-box').innerHTML = `<img src="${img}" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=empty>图片加载失败</div>'">`;
+  } else {
+    document.getElementById('image-box').innerHTML = '<div class="empty">暂无图片</div>';
+  }
+
+  // Info
+  document.getElementById('sp-name').textContent = sp.name_cn;
+  document.getElementById('sp-latin').textContent = sp.name_latin;
+  document.getElementById('sp-overview').textContent = sp.overview || '暂无概述';
+
+  // Reset form
+  dims.forEach(k=>{ sliders[k].value=5; vals[k].textContent='5'; });
+  document.getElementById('market').value = '';
+  document.getElementById('comment').value = '';
+  updateGrade();
+  
+  document.getElementById('submit-btn').disabled = false;
+  document.getElementById('next-btn').disabled = false;
+}
+
+// ── Submit ──
+document.getElementById('submit-btn').onclick = async () => {
+  if (!currentSpecies) return;
+  const scores = getScores();
+  const grade = calcGrade(scores);
+  const imgEl = document.querySelector('#image-box img');
+  const imageUrl = imgEl ? imgEl.src : (currentSpecies.image_url || '');
+
+  const body = {
+    species_id: currentSpecies.species_id,
+    image_url: imageUrl,
+    shell: scores.shell, head: scores.head, color: scores.color,
+    body: scores.body, health: scores.health,
+    grade,
+    market_range: document.getElementById('market').value,
+    comment: document.getElementById('comment').value
+  };
+
+  const r = await fetch(API+'/labeling', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body)
+  });
+  const d = await r.json();
+  if (d.ok) {
+    labeled.add(currentSpecies.species_id);
+    // Mark in sidebar
+    const li = document.querySelector(`#species-list li[data-sid="${currentSpecies.species_id}"]`);
+    if (li) { li.classList.add('done'); li.innerHTML = '✓ '+li.innerHTML.replace('✓ ',''); }
+    updateProgress();
+    // Jump to next unlabeled
+    goNext();
+  } else {
+    alert('提交失败: ' + d.error);
+  }
+};
+
+function goNext() {
+  const items = [...document.querySelectorAll('#species-list li')];
+  const currentIdx = items.findIndex(li => li.classList.contains('active'));
+  // Find next unlabeled
+  for (let i = currentIdx + 1; i < items.length; i++) {
+    if (!items[i].classList.contains('done')) {
+      items[i].click();
+      items[i].scrollIntoView({block:'nearest'});
+      return;
+    }
+  }
+  // Wrap around
+  for (let i = 0; i < currentIdx; i++) {
+    if (!items[i].classList.contains('done')) {
+      items[i].click();
+      items[i].scrollIntoView({block:'nearest'});
+      return;
+    }
+  }
+  alert('全部标注完成 🎉');
+}
+
+document.getElementById('next-btn').onclick = goNext;
+
+// ── Keyboard ──
+document.addEventListener('keydown', e => {
+  if (e.key==='Enter' && !e.ctrlKey && !e.metaKey && !e.target.closest('input[type=text]')) {
+    e.preventDefault(); document.getElementById('submit-btn').click();
+  }
+  if (e.key==='ArrowRight' && !e.target.closest('input[type=text]')) {
+    goNext();
+  }
+  const a = document.activeElement;
+  if (a && a.type==='range') {
+    if (e.key>='1' && e.key<='9') { a.value=e.key; a.dispatchEvent(new Event('input')); }
+    if (e.key==='0') { a.value=10; a.dispatchEvent(new Event('input')); }
+  }
+});
+
+loadSpecies();
+updateGrade();
+</script>
+</body>
+</html>
