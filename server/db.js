@@ -217,6 +217,23 @@ db.exec(`
 `)
 console.log('[db] Identify feedback table ready');
 
+// ==================== Migration: 达人邀请码 ====================
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS invite_codes (
+    code_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT UNIQUE NOT NULL,
+    batch_id TEXT NOT NULL,
+    created_by TEXT DEFAULT '',
+    used_by TEXT DEFAULT '',
+    used_at TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_invite_code ON invite_codes(code);
+  CREATE INDEX IF NOT EXISTS idx_invite_batch ON invite_codes(batch_id);
+`)
+console.log('[db] Invite codes table ready');
+
 // ==================== Migration: Provenance v1 ====================
 const fs = require('fs');
 const provPath = path.join(__dirname, '..', 'data', 'provenance_schema.sql');

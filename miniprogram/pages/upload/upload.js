@@ -3,7 +3,8 @@ Page({
   data: {
     imgUrl: '', speciesList: [], speciesId: '', speciesName: '',
     caption: '', city: '', intent: '',
-    shareImageUrl: '', submitted: false
+    shareImageUrl: '', submitted: false,
+    showInviteCode: false, inviteCode: '', inviteVerified: false, inviteError: ''
   },
   onLoad(opt) {
     if (opt.species_id) this.setData({ speciesId: opt.species_id });
@@ -15,6 +16,28 @@ Page({
     wx.chooseImage({ count:1, sizeType:['compressed'], success: r => this.setData({imgUrl:r.tempFilePaths[0]}) });
   },
   onSpeciesChange(e) { this.setData({speciesId:this.data.speciesList[e.detail.value].species_id}); },
+
+  toggleInviteCode() {
+    this.setData({ showInviteCode: !this.data.showInviteCode, inviteError: '' });
+  },
+
+  async verifyInviteCode() {
+    const code = this.data.inviteCode.trim().toUpperCase();
+    if (code.length !== 9) return;
+    try {
+      const data = await app.request('/api/provenance/redeem-check', {
+        method:'POST', data: { code }
+      });
+      if (data.valid) {
+        this.setData({ inviteVerified: true, inviteError: '' });
+      } else {
+        this.setData({ inviteVerified: false, inviteError: data.error || '邀请码无效' });
+      }
+    } catch (e) {
+      this.setData({ inviteVerified: false, inviteError: '验证失败，请重试' });
+    }
+  },
+
   async submit() {
     if(!this.data.imgUrl||!this.data.speciesId) return wx.showToast({title:'请选择图片和品种',icon:'none'});
     wx.showLoading({title:'上传中'});
@@ -23,6 +46,15 @@ Page({
     });
     try {
       const isProvenance = this.data.intent === 'provenance';
+
+      // 如果有验证过的邀请码，先核销
+      if (isProvenance && this.data.inviteVerified && this.data.inviteCode) {
+        await app.request('/api/provenance/redeem', {
+          method:'POST', needAuth:true,
+          data: { code: this.data.inviteCode, user_token: app.globalData.token || '' }
+        });
+      }
+
       const url = isProvenance ? '/api/provenance/register' : '/api/collections';
       await app.request(url, {
         method:'POST', needAuth:true,
@@ -33,7 +65,6 @@ Page({
       wx.hideLoading();
 
       if (isProvenance) {
-        // 生成领证分享卡
         wx.showLoading({title:'生成分享卡'});
         try {
           const name = this.data.speciesName || '龟龟';
@@ -62,7 +93,6 @@ Page({
     }
   },
 
-  // 分享
   onShareAppMessage() {
     const name = this.data.speciesName || '龟龟';
     const shareData = {

@@ -46,6 +46,7 @@ require('./routes/prices').register(app);
 require('./routes/provenance').register(app);
 require('./routes/payments').register(app);
 require('./routes/labeling').register(app);
+require('./routes/invite').register(app);
 
 // 注册用户路由
 app.post('/api/users/login', (req, res) => {

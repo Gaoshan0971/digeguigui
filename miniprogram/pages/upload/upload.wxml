@@ -22,8 +22,23 @@
       <input placeholder="{{intent=='provenance' ? '备注（来源/特征等）' : '描述你的爬宠...'}}" value="{{caption}}" bindinput="e=>this.setData({caption:e.detail.value})" class="inp" />
       <input placeholder="所在城市" value="{{city}}" bindinput="e=>this.setData({city:e.detail.value})" class="inp" />
     </view>
+
+    <!-- 邀请码（仅领证模式） -->
+    <view wx:if="{{intent=='provenance'}}" class="card" style="margin-top:8px">
+      <view class="flex-between" bindtap="toggleInviteCode">
+        <text style="font-size:14px;color:#8ab89a">🎫 有达人邀请码？</text>
+        <text style="color:#d4a853;font-size:13px">{{showInviteCode ? '收起 ▲' : '展开 ▼'}}</text>
+      </view>
+      <view wx:if="{{showInviteCode}}" style="margin-top:12px">
+        <input placeholder="输入邀请码 (如 TG-XXXXXX)" value="{{inviteCode}}" bindinput="e=>this.setData({inviteCode:e.detail.value.toUpperCase()})" class="inp" style="text-align:center;font-size:18px;letter-spacing:4px" maxlength="9" />
+        <button class="btn-outline" style="margin-top:8px;width:100%" bindtap="verifyInviteCode" wx:if="{{inviteCode.length==9}}">验证邀请码</button>
+        <text wx:if="{{inviteVerified}}" style="display:block;text-align:center;color:#4CAF50;margin-top:8px;font-size:14px">✅ 邀请码有效 · 免费领证</text>
+        <text wx:if="{{inviteError}}" style="display:block;text-align:center;color:#e74c3c;margin-top:8px;font-size:13px">{{inviteError}}</text>
+      </view>
+    </view>
+
     <button class="{{intent=='provenance' ? 'btn-gold' : 'btn-primary'}}" bindtap="submit">
-      {{intent=='provenance' ? '📜 确认领证 ¥19.9' : '发布到品鉴墙'}}
+      {{intent=='provenance' ? (inviteVerified ? '📜 免费领证' : '📜 确认领证 ¥19.9') : '发布到品鉴墙'}}
     </button>
   </block>
 
