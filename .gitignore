@@ -13,3 +13,4 @@ DigeguiguiID/*.key
 # 敏感信息文件
 DigeguiguiID/*腾讯云*.txt
 __pycache__/
+models/
