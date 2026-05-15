@@ -270,6 +270,17 @@ if (fs.existsSync(provPath)) {
   } catch (e) {
     console.error('[db] Migration free_anchors failed:', e.message);
   }
+
+  // Migration v1.2: 添加付费方式列
+  try {
+    const provCols = db.prepare("PRAGMA table_info(provenance_anchors)").all().map(c => c.name);
+    if (!provCols.includes('payment_method')) {
+      db.exec("ALTER TABLE provenance_anchors ADD COLUMN payment_method TEXT DEFAULT 'free'");
+      console.log('[db] Migration: payment_method column added to provenance_anchors');
+    }
+  } catch (e) {
+    console.error('[db] Migration payment_method failed:', e.message);
+  }
 }
 
 module.exports = db;
