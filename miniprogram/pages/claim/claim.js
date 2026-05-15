@@ -95,7 +95,7 @@ Page({
   onShareAppMessage() {
     if (!this.data.isHost) return {};
     return {
-      title: '尊敬的爬圈大佬，滴个龟龟免费赠送您10个爬宠身份证名额！',
+      title: '滴个龟龟！可以给自己的爬宠上户口了，十个爬宠身份证名额免费领取，先抢先得！',
       path: '/pages/claim/claim?batch_id=' + this.data.batchId,
       imageUrl: this.data.shareCardUrl || ''
     };

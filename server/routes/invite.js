@@ -49,9 +49,9 @@ function register(app) {
           py.stdin.write(JSON.stringify({
             image_base64: dummyImg,
             species_name: '免费领证',
-            title: '尊敬的爬圈大佬',
-            subtitle: '滴个龟龟免费赠送您10个爬宠身份证名额',
-            footer: '快给宝贝上个户口吧！先抢先得！',
+            title: '滴个龟龟！',
+            subtitle: '可以给自己的爬宠上户口了',
+            footer: '十个爬宠身份证名额免费领取，先抢先得！',
             brand: '滴个龟龟 · 达人邀请'
           }));
           py.stdin.end();
@@ -83,7 +83,7 @@ function register(app) {
         created_by,
         share_card_url: shareCardUrl,
         share_path: `/pages/claim/claim?batch_id=${batchId}`,
-        share_title: '尊敬的爬圈大佬'
+        share_title: '滴个龟龟！可以给自己的爬宠上户口了，十个爬宠身份证名额免费领取，先抢先得！'
       }
     });
   });
