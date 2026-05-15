@@ -77,6 +77,44 @@ module.exports.register = function (app) {
     res.json({ ok: true, data: { breeder_id: r.lastInsertRowid, cert_status: 'pending' } });
   });
 
+
+  // ==================== 繁育者信息 ====================
+
+  // GET /api/v2/breeders/me — 查看自己的认证状态和余额
+  app.get('/api/v2/breeders/me', (req, res) => {
+    const user = getUser(req, res); if (!user) return;
+
+    const breeder = db.prepare(`
+      SELECT id, cert_status, cert_level, free_anchors, total_births,
+             reputation_score, facility_name, real_name, created_at
+      FROM breeders WHERE user_id = ?
+    `).get(user.user_id);
+
+    if (!breeder) {
+      return res.json({
+        ok: true,
+        data: {
+          has_applied: false,
+          message: '尚未申请繁育者认证。认证通过后赠送200个免费锚定额度。',
+          next_step: 'POST /api/v2/breeders/apply'
+        }
+      });
+    }
+
+    res.json({
+      ok: true,
+      data: {
+        ...breeder,
+        has_applied: true,
+        perks: {
+          trial_slots: 10,
+          certified_slots: 200,
+          note: '申请即送10个试玩名额，认证通过后升级为200个'
+        }
+      }
+    });
+  });
+
   // GET /api/v2/breeders/:id
   app.get('/api/v2/breeders/:id', (req, res) => {
     const breeder = db.prepare('SELECT * FROM breeders WHERE id = ?').get(req.params.id);
@@ -323,42 +361,6 @@ module.exports.register = function (app) {
     });
   });
 
-  // ==================== 繁育者信息 ====================
-
-  // GET /api/v2/breeders/me — 查看自己的认证状态和余额
-  app.get('/api/v2/breeders/me', (req, res) => {
-    const user = getUser(req, res); if (!user) return;
-
-    const breeder = db.prepare(`
-      SELECT id, cert_status, cert_level, free_anchors, total_births,
-             reputation_score, facility_name, real_name, created_at
-      FROM breeders WHERE user_id = ?
-    `).get(user.user_id);
-
-    if (!breeder) {
-      return res.json({
-        ok: true,
-        data: {
-          has_applied: false,
-          message: '尚未申请繁育者认证。认证通过后赠送200个免费锚定额度。',
-          next_step: 'POST /api/v2/breeders/apply'
-        }
-      });
-    }
-
-    res.json({
-      ok: true,
-      data: {
-        ...breeder,
-        has_applied: true,
-        perks: {
-          trial_slots: 10,
-          certified_slots: 200,
-          note: '申请即送10个试玩名额，认证通过后升级为200个'
-        }
-      }
-    });
-  });
 
   console.log('[provenance] Routes registered');
 };
