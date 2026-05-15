@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工作室 · 批量锚定</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F4EF; --surface: #FFFFFF; --gold: #B8956A;
+    --gold-light: #D4C4A8; --text: #2C2416;
+    --muted: #8C7B6B; --subtle: #B8A99A;
+    --border: #EBE5DB; --green: #7A9A9A;
+    --shadow: 0 4px 18px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.027);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    display: flex; justify-content: center; padding: 20px 0 60px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .phone { width: 375px; min-height: 700px; background: var(--bg); }
+
+  /* Top bar */
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar .title { font-size: 18px; font-weight: 700; letter-spacing: -.3px; }
+  .topbar .badge {
+    background: rgba(184,149,106,.1); color: var(--gold);
+    padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  }
+
+  /* Counter hero */
+  .counter-hero {
+    text-align: center; padding: 32px 24px 20px; background: var(--surface);
+    margin: 1px 0;
+  }
+  .counter-hero .big-num {
+    font-size: 64px; font-weight: 300; color: var(--gold);
+    line-height: 1; letter-spacing: -3px; font-feature-settings: "tnum";
+  }
+  .counter-hero .big-label {
+    font-size: 13px; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 2px; margin-top: 4px;
+  }
+
+  /* Photo Strip — horizontal scroll */
+  .photo-strip {
+    display: flex; gap: 8px; padding: 12px 16px;
+    overflow-x: auto; scroll-snap-type: x mandatory;
+    background: var(--surface); margin: 8px 0;
+  }
+  .photo-strip .slot {
+    flex-shrink: 0; width: 100px; height: 100px;
+    border-radius: 8px; border: 1.5px dashed var(--gold-light);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; scroll-snap-align: start;
+    transition: all .2s; background: var(--bg);
+  }
+  .photo-strip .slot:active { transform: scale(.95); }
+  .photo-strip .slot.filled {
+    border-style: solid; border-color: var(--green);
+    background: #D4E4D4; font-size: 36px;
+  }
+  .photo-strip .slot.filled::after { content: '✓'; color: var(--green); font-weight: 700; font-size: 24px; }
+
+  /* Info row */
+  .info-row {
+    display: flex; gap: 8px; padding: 12px 16px; background: var(--surface);
+  }
+  .info-chip {
+    flex: 1; padding: 10px 14px; background: var(--bg);
+    border-radius: 8px; font-size: 13px; text-align: center;
+    cursor: pointer; border: 1px solid transparent;
+  }
+  .info-chip.active { border-color: var(--gold); background: rgba(184,149,106,.06); }
+  .info-chip .chip-label { font-size: 11px; color: var(--muted); display: block; }
+  .info-chip .chip-val { font-size: 14px; font-weight: 600; margin-top: 2px; }
+  .info-chip.active .chip-val { color: var(--gold); }
+
+  /* Quick note */
+  .quick-note {
+    margin: 0 16px; padding: 10px 14px; background: var(--surface);
+    border-radius: 8px; border: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .quick-note input {
+    flex: 1; border: none; outline: none; font-size: 13px;
+    font-family: inherit; color: var(--text); background: transparent;
+  }
+  .quick-note input::placeholder { color: var(--subtle); }
+
+  /* Action bar */
+  .action-bar {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 375px; padding: 16px; background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex; gap: 10px;
+  }
+  .btn {
+    flex: 1; padding: 14px; border-radius: 10px; border: none;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: all .15s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary {
+    background: var(--gold); color: #FFF;
+    box-shadow: 0 4px 12px rgba(184,149,106,.25);
+  }
+  .btn-secondary {
+    background: transparent; color: var(--gold);
+    border: 1.5px solid var(--gold);
+  }
+
+  /* Anchor timeline */
+  .timeline {
+    margin: 8px 16px; padding: 16px; background: var(--surface);
+    border-radius: 12px; border: 1px solid var(--border);
+    max-height: 200px; overflow-y: auto;
+  }
+  .tl-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+  }
+  .tl-item:last-child { border-bottom: none; }
+  .tl-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--gold);
+    flex-shrink: 0;
+  }
+  .tl-info { flex: 1; }
+  .tl-info .tl-name { font-size: 13px; font-weight: 600; }
+  .tl-info .tl-id {
+    font-size: 10px; color: var(--gold); font-family: monospace; margin-top: 2px;
+  }
+  .tl-time { font-size: 11px; color: var(--subtle); }
+
+  /* Toggle bar */
+  .toggle-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 16px; background: var(--surface);
+    margin: 8px 0; font-size: 13px;
+  }
+  .toggle-bar.sw { gap: 12px; }
+  .mini-switch {
+    width: 38px; height: 22px; border-radius: 11px;
+    background: #D4C4A8; position: relative; cursor: pointer; transition: .2s;
+  }
+  .mini-switch.on { background: var(--gold); }
+  .mini-switch .kn {
+    width: 16px; height: 16px; border-radius: 8px;
+    background: #FFF; position: absolute; top: 3px; left: 3px; transition: .2s;
+  }
+  .mini-switch.on .kn { left: 19px; }
+
+  .success-overlay {
+    position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+    width: 375px; height: 100vh; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 48px 24px; text-align: center;
+    z-index: 10;
+  }
+  .success-overlay .big-icon { font-size: 64px; margin-bottom: 20px; }
+  .success-overlay h2 { font-size: 24px; margin-bottom: 8px; }
+  .success-overlay .id-list {
+    text-align: left; font-size: 13px; color: var(--muted);
+    max-height: 300px; overflow-y: auto; width: 100%;
+    margin: 16px 0;
+  }
+</style>
+</head>
+<body>
+<div class="phone" id="app">
+
+  <div class="topbar">
+    <span class="title">⚡ 批量锚定</span>
+    <span class="badge">繁育者·196次剩余</span>
+  </div>
+
+  <div class="counter-hero">
+    <div class="big-num" id="counter">0</div>
+    <div class="big-label">只已登记</div>
+  </div>
+
+  <div class="photo-strip" id="photoStrip">
+    <div class="slot" onclick="addPhoto(this)" title="拍第一只"></div>
+  </div>
+
+  <div class="info-row">
+    <div class="info-chip active">
+      <span class="chip-label">品种</span>
+      <span class="chip-val">剃刀龟</span>
+    </div>
+    <div class="info-chip">
+      <span class="chip-label">窝次</span>
+      <span class="chip-val" id="clutchVal">第3窝</span>
+    </div>
+    <div class="info-chip">
+      <span class="chip-label">日期</span>
+      <span class="chip-val">5.15</span>
+    </div>
+  </div>
+
+  <div class="quick-note">
+    <span style="font-size:13px;color:var(--muted)">📝</span>
+    <input placeholder="备注（可选）" />
+  </div>
+
+  <div class="toggle-bar">
+    <span style="color:var(--muted)">🛡️ 出生锚定 · 龟纹AI · 哈希链</span>
+  </div>
+
+  <div class="timeline" id="timeline">
+    <div style="text-align:center;color:var(--subtle);font-size:12px;padding:12px">
+      点击上方拍照区开始登记
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn btn-secondary" id="finishBtn" style="display:none" onclick="finishAll()">
+      ✅ 完成（<span id="finishCount">0</span>只）
+    </button>
+    <button class="btn btn-primary" style="flex:3" onclick="simulateScan()">
+      📸 扫描登记
+    </button>
+  </div>
+
+</div>
+
+<script>
+let count = 0, anchors = [];
+
+function addPhoto(el) {
+  el.classList.add('filled');
+  // Add new slot
+  const strip = document.getElementById('photoStrip');
+  const newSlot = document.createElement('div');
+  newSlot.className = 'slot';
+  newSlot.onclick = function() { addPhoto(this); };
+  strip.appendChild(newSlot);
+  strip.scrollLeft = strip.scrollWidth;
+
+  count++;
+  document.getElementById('counter').textContent = count;
+  const id = 'DGG-T-00000' + (4 + count);
+  anchors.push({ id, idx: count });
+
+  // Update timeline
+  updateTimeline();
+
+  // Show finish button
+  const fb = document.getElementById('finishBtn');
+  fb.style.display = 'block';
+  document.getElementById('finishCount').textContent = count;
+}
+
+function updateTimeline() {
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = anchors.map(a => `
+    <div class="tl-item">
+      <div class="tl-dot"></div>
+      <div class="tl-info">
+        <div class="tl-name">🐢 剃刀龟 #${a.idx}</div>
+        <div class="tl-id">${a.id}</div>
+      </div>
+      <div class="tl-time">刚刚</div>
+    </div>
+  `).join('');
+}
+
+function simulateScan() {
+  // Simulate clicking the first empty slot
+  const slots = document.querySelectorAll('.photo-strip .slot:not(.filled)');
+  if (slots.length > 0) addPhoto(slots[0]);
+}
+
+function finishAll() {
+  document.querySelector('.phone').innerHTML = `
+    <div class="success-overlay">
+      <div class="big-icon">📜</div>
+      <h2>🎉 批量登记完成</h2>
+      <p style="color:var(--muted);font-size:14px">剃刀龟 · 一窝${count}只已全部上链</p>
+      <div class="id-list">${anchors.map(a =>
+        `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span>🐢 #${a.idx}</span>
+          <span style="font-family:monospace;color:var(--gold);font-size:11px">${a.id}</span>
+        </div>`
+      ).join('')}</div>
+      <p style="color:var(--green);font-size:12px;margin:16px 0">🎁 剩余免费额度：${196 - count} 次</p>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px">📤 晒到群里</button>
+      <button class="btn btn-secondary" style="width:100%;margin-top:8px">返回首页</button>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>

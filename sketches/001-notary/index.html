@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>证书房 · 上户口</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F4EF; --card: #FFFFFF; --gold: #B8956A;
+    --gold-dark: #9A7B52; --text: #2C2416; --muted: #8C7B6B;
+    --border: #EBE5DB; --green: #7A9A7A;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.04);
+    --shadow-card: 0 4px 18px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.027), 0 0.8px 3px rgba(0,0,0,.02);
+    --shadow-deep: 0 14px 28px rgba(0,0,0,.04), 0 7px 15px rgba(0,0,0,.02);
+    --radius: 16px; --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    display: flex; justify-content: center;
+    padding: 20px 0 60px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .phone {
+    width: 375px; min-height: 700px;
+    background: var(--bg); position: relative;
+    border-radius: 24px; overflow: hidden;
+  }
+
+  /* Header */
+  .header {
+    text-align: center; padding: 48px 24px 32px;
+  }
+  .header .stamp {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 72px; height: 72px; border-radius: 50%;
+    border: 2px solid var(--gold);
+    color: var(--gold); font-size: 28px; font-weight: 700;
+    font-family: 'Noto Serif SC', serif;
+    margin-bottom: 20px;
+    transform: rotate(-8deg);
+  }
+  .header h1 {
+    font-size: 28px; font-weight: 700; letter-spacing: 1px;
+    color: var(--text); line-height: 1.2;
+  }
+  .header p {
+    font-size: 14px; color: var(--muted); margin-top: 6px;
+  }
+
+  /* Photo Area */
+  .photo-area {
+    margin: 0 20px; height: 220px;
+    background: var(--card); border-radius: var(--radius);
+    border: 1.5px dashed var(--gold);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer; transition: all .2s;
+    box-shadow: var(--shadow-sm);
+  }
+  .photo-area:hover { border-color: var(--gold-dark); background: #FDFBF7; }
+  .photo-area .icon { font-size: 48px; margin-bottom: 12px; opacity: .7; }
+  .photo-area .hint { font-size: 14px; color: var(--muted); }
+  .photo-area .hint-sub { font-size: 12px; color: #B8A99A; margin-top: 4px; }
+  .photo-area.has-photo { border-style: solid; border-color: var(--gold); }
+  .photo-area img { width: 100%; height: 100%; object-fit: cover; border-radius: 15px; }
+
+  /* Info Card */
+  .card {
+    margin: 16px 20px; background: var(--card);
+    border-radius: var(--radius); padding: 20px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
+  }
+  .card-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .card-row:last-child { border-bottom: none; }
+  .card-row .label { font-size: 15px; color: var(--muted); }
+  .card-row .value { font-size: 15px; color: var(--gold); font-weight: 500; }
+  .inp {
+    width: 100%; border: none; outline: none;
+    font-size: 14px; color: var(--text); padding: 10px 0;
+    font-family: inherit; background: transparent;
+    border-bottom: 1px solid var(--border);
+  }
+  .inp::placeholder { color: #B8A99A; }
+
+  /* Batch Toggle */
+  .batch-toggle {
+    margin: 12px 20px; padding: 12px 16px;
+    background: var(--card); border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+  }
+  .batch-toggle .bt-label { font-size: 14px; font-weight: 600; }
+  .batch-toggle .bt-desc { font-size: 12px; color: var(--muted); display: block; margin-top: 2px; }
+  .switch {
+    width: 44px; height: 26px; border-radius: 13px;
+    background: #D4C4A8; position: relative; transition: .2s;
+  }
+  .switch.on { background: var(--gold); }
+  .switch .knob {
+    width: 20px; height: 20px; border-radius: 10px;
+    background: #FFF; position: absolute; top: 3px; left: 3px;
+    transition: .2s; box-shadow: 0 1px 3px rgba(0,0,0,.15);
+  }
+  .switch.on .knob { left: 21px; }
+
+  /* Batch Counter */
+  .counter {
+    text-align: center; padding: 12px;
+  }
+  .counter .num {
+    font-size: 40px; font-weight: 800; color: var(--gold);
+    font-family: 'Noto Serif SC', serif;
+  }
+  .counter .label { font-size: 13px; color: var(--muted); margin-left: 4px; }
+
+  /* Buttons */
+  .btn {
+    margin: 12px 20px; width: calc(100% - 40px);
+    padding: 16px; border-radius: 12px; border: none;
+    font-size: 16px; font-weight: 600; cursor: pointer;
+    letter-spacing: .5px; transition: all .15s;
+    font-family: inherit;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-gold {
+    background: linear-gradient(135deg, #B8956A, #9A7B52);
+    color: #FFF; box-shadow: 0 4px 16px rgba(184,149,106,.3);
+  }
+  .btn-outline {
+    background: transparent; color: var(--gold);
+    border: 1.5px solid var(--gold);
+  }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn:disabled:active { transform: none; }
+
+  /* Anchor List */
+  .anchor-list {
+    margin: 8px 20px; max-height: 180px; overflow-y: auto;
+    background: var(--card); border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .anchor-row {
+    display: flex; justify-content: space-between; padding: 10px 16px;
+    border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .anchor-row:last-child { border-bottom: none; }
+  .anchor-row .aid {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: var(--gold); font-size: 11px;
+  }
+
+  /* Success */
+  .success-card {
+    margin: 0 20px; padding: 40px 24px; text-align: center;
+    background: var(--card); border-radius: var(--radius);
+    border: 1px solid var(--gold);
+    box-shadow: var(--shadow-deep);
+  }
+  .success-card .seal {
+    width: 80px; height: 80px; border-radius: 50%;
+    border: 2px solid var(--gold); color: var(--gold);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 36px; font-family: 'Noto Serif SC', serif;
+    margin-bottom: 20px; transform: rotate(-5deg);
+  }
+  .success-card .anchor-id {
+    font-size: 20px; font-weight: 700; color: var(--gold);
+    letter-spacing: 2px; font-family: 'SF Mono', 'Fira Code', monospace;
+    margin: 8px 0;
+  }
+  .success-card .free-remaining {
+    font-size: 12px; color: var(--green); margin-top: 4px;
+  }
+  .success-card .share-note {
+    font-size: 14px; color: var(--muted); margin-top: 16px;
+  }
+
+  /* Footer note */
+  .footnote {
+    text-align: center; padding: 16px; font-size: 11px; color: #B8A99A;
+  }
+</style>
+</head>
+<body>
+<div class="phone" id="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="stamp">印</div>
+    <h1>📜 上户口 · 领证</h1>
+    <p>出生锚定 · 龟纹AI识别 · 哈希链存证</p>
+  </div>
+
+  <!-- PHOTO -->
+  <div class="photo-area" id="photoArea" onclick="simulatePhoto()">
+    <div id="photoPlaceholder">
+      <div class="icon">🆔</div>
+      <div class="hint">拍摄龟背纹路</div>
+      <div class="hint-sub">清晰纹路 = 终身可验证</div>
+    </div>
+  </div>
+
+  <!-- INFO CARD -->
+  <div class="card">
+    <div class="card-row" onclick="document.getElementById('speciesPick').click()">
+      <span class="label">品种</span>
+      <span class="value" id="speciesVal">剃刀龟 ›</span>
+    </div>
+    <input class="inp" id="notesInp" placeholder="窝次/备注（如：2026春·第3窝）" />
+    <input class="inp" placeholder="所在城市" style="margin-top:4px" />
+  </div>
+
+  <!-- BATCH TOGGLE -->
+  <div class="batch-toggle" onclick="toggleBatch()">
+    <div>
+      <span class="bt-label">🔁 批量登记</span>
+      <span class="bt-desc">同一窝连续拍照，信息一次填完</span>
+    </div>
+    <div class="switch" id="batchSwitch"><div class="knob"></div></div>
+  </div>
+
+  <!-- BATCH COUNTER -->
+  <div class="counter" id="batchCounter" style="display:none">
+    <span class="num" id="batchNum">0</span>
+    <span class="label">只已登记</span>
+  </div>
+
+  <!-- ANCHOR LIST -->
+  <div class="anchor-list" id="anchorList" style="display:none"></div>
+
+  <!-- BUTTONS -->
+  <button class="btn btn-gold" id="submitBtn" onclick="doSubmit()">
+    📜 确认领证
+  </button>
+  <button class="btn btn-outline" id="finishBtn" style="display:none" onclick="finishBatch()">
+    ✅ 完成登记
+  </button>
+
+  <div class="footnote">
+    🎁 繁育者认证通过即送 200 个免费锚定额度
+  </div>
+
+</div>
+
+<script>
+let batchMode = false, batchCount = 0, hasPhoto = false;
+let anchors = [];
+
+function simulatePhoto() {
+  hasPhoto = !hasPhoto;
+  const area = document.getElementById('photoArea');
+  const ph = document.getElementById('photoPlaceholder');
+  if (hasPhoto) {
+    area.classList.add('has-photo');
+    area.style.background = '#D4C4A8';
+    ph.innerHTML = '<div style="font-size:40px">🐢</div><div class="hint" style="color:#2C2416">已拍摄 · 点击重拍</div>';
+    document.getElementById('submitBtn').disabled = false;
+  } else {
+    area.classList.remove('has-photo');
+    area.style.background = '';
+    ph.innerHTML = '<div class="icon">🆔</div><div class="hint">拍摄龟背纹路</div><div class="hint-sub">清晰纹路 = 终身可验证</div>';
+  }
+  updateSubmitBtn();
+}
+
+function toggleBatch() {
+  batchMode = !batchMode;
+  document.getElementById('batchSwitch').classList.toggle('on', batchMode);
+  document.getElementById('batchCounter').style.display = batchMode ? 'block' : 'none';
+  document.getElementById('finishBtn').style.display = (batchMode && batchCount > 0) ? 'block' : 'none';
+  updateSubmitBtn();
+}
+
+function updateSubmitBtn() {
+  const btn = document.getElementById('submitBtn');
+  if (batchMode) {
+    btn.textContent = batchCount > 0 ? `📸 拍下一只（第${batchCount+1}只）` : '📸 拍第一只';
+    btn.disabled = !hasPhoto;
+  } else {
+    btn.textContent = '📜 确认领证';
+    btn.disabled = !hasPhoto;
+  }
+  // Show finish button if batch has entries
+  const fb = document.getElementById('finishBtn');
+  if (batchMode && batchCount > 0) fb.style.display = 'block';
+  else fb.style.display = 'none';
+}
+
+function doSubmit() {
+  if (!hasPhoto) return;
+  if (batchMode) {
+    batchCount++;
+    const id = 'DGG-T-00000' + (5 + batchCount);
+    anchors.push({ id, name: '剃刀龟', idx: batchCount });
+    document.getElementById('batchNum').textContent = batchCount;
+    updateAnchorList();
+    hasPhoto = false;
+    const area = document.getElementById('photoArea');
+    area.classList.remove('has-photo');
+    area.style.background = '';
+    document.getElementById('photoPlaceholder').innerHTML =
+      '<div class="icon">🆔</div><div class="hint">拍摄下一只</div><div class="hint-sub">第'+(batchCount+1)+'只苗子</div>';
+    updateSubmitBtn();
+  } else {
+    showSingleSuccess();
+  }
+}
+
+function updateAnchorList() {
+  const list = document.getElementById('anchorList');
+  list.style.display = 'block';
+  list.innerHTML = anchors.map(a =>
+    `<div class="anchor-row"><span>🐢 #${a.idx} ${a.name}</span><span class="aid">${a.id}</span></div>`
+  ).join('');
+}
+
+function finishBatch() {
+  document.getElementById('submitBtn').style.display = 'none';
+  document.getElementById('finishBtn').style.display = 'none';
+  document.getElementById('batchSwitch').parentElement.style.display = 'none';
+  document.getElementById('anchorList').style.display = 'none';
+  document.getElementById('batchCounter').style.display = 'none';
+  document.getElementById('photoArea').style.display = 'none';
+  document.querySelector('.card').style.display = 'none';
+  document.querySelector('.footnote').style.display = 'none';
+
+  const phone = document.getElementById('app');
+  const sc = document.createElement('div');
+  sc.className = 'success-card';
+  sc.innerHTML = `
+    <div class="seal">印</div>
+    <h2 style="font-size:22px;font-weight:700;margin-bottom:16px">🎉 批量登记完成</h2>
+    <p style="color:#8C7B6B;font-size:14px;margin-bottom:20px">剃刀龟 · 一窝${batchCount}只已全部上链</p>
+    <div style="text-align:left;margin:16px 0">${anchors.map(a =>
+      `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #EBE5DB;font-size:13px">
+        <span>🐢 #${a.idx}</span><span style="font-family:monospace;color:#B8956A;font-size:11px">${a.id}</span>
+      </div>`
+    ).join('')}</div>
+    <p class="free-remaining">🎁 剩余免费额度：196 次</p>
+    <p class="share-note">📤 晒到群里：一窝${batchCount}只全部上户口！</p>
+  `;
+  phone.appendChild(sc);
+}
+
+function showSingleSuccess() {
+  document.getElementById('submitBtn').style.display = 'none';
+  document.getElementById('photoArea').style.display = 'none';
+  document.querySelector('.card').style.display = 'none';
+  document.querySelector('.footnote').style.display = 'none';
+  document.getElementById('batchSwitch').parentElement.style.display = 'none';
+
+  const phone = document.getElementById('app');
+  const sc = document.createElement('div');
+  sc.style.marginTop = '24px';
+  sc.className = 'success-card';
+  sc.innerHTML = `
+    <div class="seal">印</div>
+    <h2 style="font-size:22px;font-weight:700">🎉 领证成功</h2>
+    <p style="color:#8C7B6B;font-size:13px;margin-top:4px">剃刀龟 · 已锚定上链</p>
+    <div class="anchor-id">DGG-T-000005</div>
+    <p class="free-remaining">🎁 剩余免费额度：199 次</p>
+    <p class="share-note">📤 晒到群里：手写证明之外<br>多一份区块链认证</p>
+  `;
+  phone.appendChild(sc);
+}
+</script>
+</body>
+</html>

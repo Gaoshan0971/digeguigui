@@ -1,142 +1,152 @@
 <view class="pg">
-  <!-- 未提交：表单 -->
+  <!-- 未提交 -->
   <block wx:if="{{!submitted}}">
-    <view class="uh">
-      <text class="uh-title">{{intent=='provenance' ? '📜 上户口 · 领证' : '晒我的爬宠'}}</text>
-      <text class="text-muted" wx:if="{{intent=='provenance' && speciesName}}" style="margin-top:8px">品种：{{speciesName}}</text>
-    </view>
 
-    <!-- 批量模式开关（仅领证模式） -->
-    <view wx:if="{{intent=='provenance'}}" class="card" style="margin-top:0;padding:12px 16px;display:flex;justify-content:space-between;align-items:center" bindtap="toggleBatch">
-      <view>
-        <text style="font-size:15px;font-weight:600;color:#2C2416">🔁 批量登记</text>
-        <text style="font-size:12px;color:#8C7B6B;display:block;margin-top:2px">同一窝连续拍照，信息一次填完</text>
+    <!-- ===== 取景框（画廊风） ===== -->
+    <view class="vf-box {{imgUrl ? 'has-photo' : ''}}" bindtap="chooseImage">
+      <image wx:if="{{imgUrl}}" src="{{imgUrl}}" mode="aspectFill" class="vf-img" />
+      <view wx:else class="vf-empty">
+        <view class="vf-grid"></view>
+        <text class="vf-icon">📷</text>
+        <text class="vf-hint">拍摄龟背纹路</text>
       </view>
-      <view style="width:48px;height:28px;border-radius:14px;background:{{batchMode ? '#B8956A' : '#D4C4A8'}};position:relative;transition:all .2s">
-        <view style="width:22px;height:22px;border-radius:11px;background:#FFF;position:absolute;top:3px;left:{{batchMode ? '23px' : '3px'}};transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></view>
-      </view>
-    </view>
-
-    <view class="img-box" bindtap="chooseImage">
-      <image wx:if="{{imgUrl}}" src="{{imgUrl}}" mode="aspectFill" class="up-img" />
-      <view wx:else class="img-placeholder">
-        <text style="font-size:40px">{{intent=='provenance' ? '🆔' : '📸'}}</text>
-        <text class="text-muted">{{batchMode ? '拍一只苗子的龟背纹路' : (intent=='provenance' ? '拍一张清晰的龟背纹路' : '点击选择图片')}}</text>
+      <!-- 品种浮标 -->
+      <view wx:if="{{speciesName}}" class="species-chip" catchtap="onSpeciesChange">
+        <text>🐢 {{speciesName || '选择品种'}}</text>
+        <text class="chip-arrow">›</text>
       </view>
     </view>
 
-    <!-- 批量计数器 -->
-    <view wx:if="{{batchMode && batchCount > 0}}" style="text-align:center;margin:8px 16px">
-      <text style="font-size:28px;font-weight:800;color:#B8956A">{{batchCount}}</text>
-      <text style="font-size:14px;color:#8C7B6B;margin-left:4px">只已登记</text>
+    <!-- ===== 批量计数器（工作室风） ===== -->
+    <view wx:if="{{batchMode && batchCount > 0}}" class="counter-hero">
+      <text class="counter-num">{{batchCount}}</text>
+      <text class="counter-label">只已登记</text>
     </view>
 
-    <!-- 批量锚定列表 -->
-    <view wx:if="{{batchMode && batchAnchors.length > 0}}" class="card" style="max-height:200px;overflow-y:auto">
+    <!-- ===== 照片条（批量模式） ===== -->
+    <scroll-view wx:if="{{batchMode && batchAnchors.length > 0}}" class="photo-strip" scroll-x>
       <block wx:for="{{batchAnchors}}" wx:key="anchor_id">
-        <view style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #EBE5DB">
-          <text style="font-size:13px;color:#2C2416">#{{item.index}} {{item.species_name || '龟龟'}}</text>
-          <text style="font-size:11px;color:#B8956A;font-family:monospace">{{item.anchor_id}}</text>
+        <view class="strip-slot filled">
+          <text style="font-size:20px;color:#7A9A9A">✓</text>
+          <text style="font-size:10px;color:#B8956A;margin-top:4px">{{item.anchor_id.slice(-4)}}</text>
+        </view>
+      </block>
+      <view class="strip-slot add-slot" bindtap="chooseImage">
+        <text style="font-size:24px;color:#D4C4A8">+</text>
+      </view>
+    </scroll-view>
+
+    <!-- ===== 信息卡片（证书房风） ===== -->
+    <view class="info-card">
+      <picker wx:if="{{!speciesId}}" mode="selector" range="{{speciesList}}" range-key="name_cn" bindchange="onSpeciesChange">
+        <view class="info-row">
+          <text class="info-lbl">品种</text>
+          <text class="info-val gold">选择品种 ›</text>
+        </view>
+      </picker>
+      <view wx:else class="info-row" bindtap="onSpeciesChange">
+        <text class="info-lbl">品种</text>
+        <text class="info-val gold">{{speciesName}}</text>
+      </view>
+      <input class="info-inp" placeholder="窝次/备注（如：2026春·第3窝）" value="{{caption}}" bindinput="e=>this.setData({caption:e.detail.value})" />
+      <input class="info-inp" placeholder="所在城市" value="{{city}}" bindinput="e=>this.setData({city:e.detail.value})" style="margin-top:2px" />
+    </view>
+
+    <!-- ===== 批量开关 ===== -->
+    <view wx:if="{{intent=='provenance'}}" class="batch-row" bindtap="toggleBatch">
+      <view>
+        <text class="batch-title">🔁 批量登记</text>
+        <text class="batch-desc">同一窝连续拍照，信息一次填完</text>
+      </view>
+      <view class="toggle {{batchMode ? 'on' : ''}}"><view class="toggle-knob"></view></view>
+    </view>
+
+    <!-- ===== 锚定时间线（批量模式） ===== -->
+    <view wx:if="{{batchMode && batchAnchors.length > 0}}" class="timeline">
+      <block wx:for="{{batchAnchors}}" wx:key="anchor_id">
+        <view class="tl-row">
+          <view class="tl-dot"></view>
+          <view class="tl-body">
+            <text class="tl-name">🐢 {{item.species_name || speciesName}} #{{item.index}}</text>
+            <text class="tl-id">{{item.anchor_id}}</text>
+          </view>
+          <text class="tl-time">刚刚</text>
         </view>
       </block>
     </view>
 
-    <view class="card">
-      <picker wx:if="{{!speciesId}}" mode="selector" range="{{speciesList}}" range-key="name_cn" bindchange="onSpeciesChange">
-        <view class="picker-row"><text>品种</text><text class="text-gold">选择品种 ›</text></view>
-      </picker>
-      <view wx:else class="picker-row">
-        <text>品种</text><text class="text-gold">{{speciesName || '已选择'}}</text>
-      </view>
-      <input placeholder="{{intent=='provenance' ? '窝次/备注（如：2026春第3窝）' : '描述你的爬宠...'}}" value="{{caption}}" bindinput="e=>this.setData({caption:e.detail.value})" class="inp" />
-      <input placeholder="所在城市" value="{{city}}" bindinput="e=>this.setData({city:e.detail.value})" class="inp" />
+    <!-- ===== 邀请码（非批量时显示） ===== -->
+    <view wx:if="{{intent=='provenance' && !batchMode && showInviteCode}}" class="info-card" style="margin-top:0">
+      <input placeholder="输入邀请码 (TG-XXXXXX)" value="{{inviteCode}}" bindinput="e=>this.setData({inviteCode:e.detail.value.toUpperCase()})" class="info-inp" style="text-align:center;font-size:16px;letter-spacing:3px" maxlength="9" />
+      <button class="btn-outline-sm" bindtap="verifyInviteCode" wx:if="{{inviteCode.length==9}}">验证邀请码</button>
+      <text wx:if="{{inviteVerified}}" style="display:block;text-align:center;color:#7A9A9A;margin-top:8px;font-size:13px">✅ 邀请码有效 · 免费领证</text>
+      <text wx:if="{{inviteError}}" style="display:block;text-align:center;color:#C46B6B;margin-top:8px;font-size:12px">{{inviteError}}</text>
     </view>
 
-    <!-- 邀请码（仅领证模式） -->
-    <view wx:if="{{intent=='provenance' && !batchMode}}" class="card" style="margin-top:8px">
-      <view class="flex-between" bindtap="toggleInviteCode">
-        <text style="font-size:14px;color:#8ab89a">🎫 有达人邀请码？</text>
-        <text style="color:#d4a853;font-size:13px">{{showInviteCode ? '收起 ▲' : '展开 ▼'}}</text>
-      </view>
-      <view wx:if="{{showInviteCode}}" style="margin-top:12px">
-        <input placeholder="输入邀请码 (如 TG-XXXXXX)" value="{{inviteCode}}" bindinput="e=>this.setData({inviteCode:e.detail.value.toUpperCase()})" class="inp" style="text-align:center;font-size:18px;letter-spacing:4px" maxlength="9" />
-        <button class="btn-outline" style="margin-top:8px;width:100%" bindtap="verifyInviteCode" wx:if="{{inviteCode.length==9}}">验证邀请码</button>
-        <text wx:if="{{inviteVerified}}" style="display:block;text-align:center;color:#4CAF50;margin-top:8px;font-size:14px">✅ 邀请码有效 · 免费领证</text>
-        <text wx:if="{{inviteError}}" style="display:block;text-align:center;color:#e74c3c;margin-top:8px;font-size:13px">{{inviteError}}</text>
-      </view>
-    </view>
-
-    <!-- 操作按钮 -->
+    <!-- ===== 操作按钮 ===== -->
     <block wx:if="{{batchMode}}">
       <button class="btn-gold" bindtap="submit" disabled="{{!imgUrl||!speciesId}}">
-        📸 {{batchCount > 0 ? '拍下一只（第' + (batchCount + 1) + '只）' : '拍第一只'}}
+        📸 {{batchCount > 0 ? '继续拍（第'+(batchCount+1)+'只）' : '拍第一只'}}
       </button>
       <button wx:if="{{batchCount > 0}}" class="btn-outline" bindtap="finishBatch" style="margin-top:8px">
-        ✅ 完成登记（共{{batchCount}}只）
+        ✅ 完成登记 · 共{{batchCount}}只
       </button>
     </block>
     <block wx:else>
-      <button class="{{intent=='provenance' ? 'btn-gold' : 'btn-primary'}}" bindtap="submit">
-        {{intent=='provenance' ? (inviteVerified ? '📜 免费领证（邀请码）' : '📜 确认领证') : '发布到品鉴墙'}}
+      <button class="btn-gold" bindtap="submit" disabled="{{!imgUrl||!speciesId}}">
+        {{intent=='provenance' ? (inviteVerified ? '📜 免费领证' : '📜 确认领证') : '发布到品鉴墙'}}
       </button>
     </block>
 
+    <!-- 邀请码入口 + 福利提示 -->
     <view wx:if="{{intent=='provenance' && !batchMode}}" style="text-align:center;margin-top:8px">
-      <text class="text-muted" style="font-size:12px">
-        🎁 繁育者认证通过即送200个免费锚定额度 · 手写证明之外多一份区块链认证
-      </text>
+      <text wx:if="{{!showInviteCode}}" style="font-size:12px;color:#B8956A" bindtap="toggleInviteCode">🎫 有达人邀请码？</text>
     </view>
+    <view wx:if="{{intent=='provenance' && !batchMode}}" style="text-align:center;margin-top:6px">
+      <text class="perk-text">🎁 繁育者认证通过即送 200 个免费锚定额度</text>
+    </view>
+
   </block>
 
-  <!-- 批量完成：汇总 -->
+  <!-- ===== 单只成功：证书页 ===== -->
+  <block wx:if="{{submitted && !batchDone}}">
+    <view class="cert-page">
+      <view class="cert-seal">印</view>
+      <text class="cert-title">🎉 领证成功</text>
+      <text class="cert-sub">{{speciesName}} · 已锚定上链</text>
+      <text class="cert-id">{{anchorId}}</text>
+      <text wx:if="{{remainingFree !== null}}" class="cert-remaining">🎁 剩余免费额度：{{remainingFree}} 次</text>
+      <view class="cert-note">
+        <text>🛡️ 出生锚定 · 龟纹AI识别 · 哈希链存证</text>
+        <text style="margin-top:8px;font-size:13px;color:#8C7B6B">手写证明之外，多一份区块链认证</text>
+      </view>
+    </view>
+    <button class="btn-gold" open-type="share">📤 晒到群里</button>
+    <button class="btn-outline" bindtap="backHome" style="margin-top:8px">返回首页</button>
+  </block>
+
+  <!-- ===== 批量完成：汇总 ===== -->
   <block wx:if="{{batchDone}}">
-    <view class="uh">
-      <text class="uh-title">🎉 批量登记完成！</text>
-      <text class="text-muted" style="margin-top:8px">{{speciesName}} · 一窝{{batchCount}}只已全部上链</text>
-    </view>
-    <view class="card">
-      <text style="font-size:14px;color:#8C7B6B;display:block;margin-bottom:12px">📋 锚定号列表</text>
-      <block wx:for="{{batchAnchors}}" wx:key="anchor_id">
-        <view style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #EBE5DB">
-          <text style="font-size:14px;color:#2C2416">🐢 #{{item.index}} {{item.species_name}}</text>
-          <text style="font-size:12px;color:#B8956A;font-family:monospace" selectable="true">{{item.anchor_id}}</text>
-        </view>
-      </block>
-    </view>
-    <view wx:if="{{remainingFree !== null && remainingFree !== undefined}}" style="text-align:center;margin:8px 0">
-      <text style="font-size:13px;color:#8ab89a">🎁 剩余免费额度：{{remainingFree}} 次</text>
+    <view class="cert-page">
+      <view class="cert-seal" style="width:60px;height:60px;font-size:20px">印</view>
+      <text class="cert-title">🎉 批量登记完成</text>
+      <text class="cert-sub">{{speciesName}} · 一窝{{batchCount}}只已全部上链</text>
+      <view style="text-align:left;margin:20px 0;width:100%">
+        <block wx:for="{{batchAnchors}}" wx:key="anchor_id">
+          <view class="batch-result-row">
+            <text>🐢 #{{item.index}} {{item.species_name || speciesName}}</text>
+            <text class="batch-result-id">{{item.anchor_id}}</text>
+          </view>
+        </block>
+      </view>
+      <text wx:if="{{remainingFree !== null}}" class="cert-remaining">🎁 剩余免费额度：{{remainingFree}} 次</text>
     </view>
     <button class="btn-gold" open-type="share">📤 晒到群里：一窝{{batchCount}}只全部上户口！</button>
     <button class="btn-outline" bindtap="backHome" style="margin-top:8px">返回首页</button>
   </block>
 
-  <!-- 单只成功：分享引导 -->
-  <block wx:if="{{submitted && !batchDone}}">
-    <view class="uh">
-      <text class="uh-title">🎉 领证成功！</text>
-      <text class="text-muted" style="margin-top:8px">{{speciesName}} 已锚定上链</text>
-      <text style="display:block;margin-top:6px;font-size:18px;font-weight:700;color:#d4a853;letter-spacing:2px">{{anchorId}}</text>
-      <text wx:if="{{remainingFree !== null && remainingFree !== undefined}}" style="display:block;margin-top:4px;font-size:12px;color:#8ab89a">
-        🎁 剩余免费额度：{{remainingFree}} 次
-      </text>
-    </view>
-    <view class="card" style="text-align:center;padding:32px">
-      <text style="font-size:48px;display:block;margin-bottom:16px">📜</text>
-      <text style="font-size:20px;font-weight:700;color:#d4a853;display:block;margin-bottom:8px">
-        滴个龟龟！刚给我的{{speciesName}}上了户口
-      </text>
-      <text style="font-size:16px;color:#e8e0c8;display:block;margin-bottom:24px">
-        这颜值你们能给打几分？
-      </text>
-      <text style="font-size:11px;color:#6a9a7a;display:block;margin-bottom:24px">
-        🛡️ 出生锚定 · 龟纹AI识别 · 哈希链存证
-      </text>
-    </view>
-    <button class="btn-gold" open-type="share">📤 晒到群里，让他们打分！</button>
-    <button class="btn-outline" bindtap="backHome" style="margin-top:8px">返回首页</button>
-  </block>
-
-  <view wx:if="{{intent=='provenance' && !submitted && !batchMode}}" class="card" style="text-align:center;margin-top:8px">
-    <text class="text-muted" style="font-size:12px">🛡️ 出生锚定 · 龟纹AI识别 · 哈希链存证</text>
+  <!-- 邀请码小入口 -->
+  <view wx:if="{{intent=='provenance' && !submitted && !batchMode && !showInviteCode}}" style="text-align:center;margin-top:8px">
+    <text style="font-size:11px;color:#B8A99A">🛡️ 出生锚定 · 龟纹AI · 哈希链存证</text>
   </view>
 </view>

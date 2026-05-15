@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>画廊 · 影像登记</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F4EF; --gold: #B8956A; --gold-dark: #9A7B52;
+    --text: #2C2416; --muted: #8C7B6B; --subtle: #B8A99A;
+    --border: rgba(0,0,0,.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background: #FAF8F4; color: var(--text);
+    display: flex; justify-content: center; padding: 20px 0 60px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .phone { width: 375px; min-height: 700px; position: relative; }
+
+  /* Full-screen photo */
+  .viewfinder {
+    width: 100%; height: 380px; background: linear-gradient(180deg, #EDE8DF 0%, #D4C4A8 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: height .3s;
+  }
+  .viewfinder.has-photo { height: 280px; background: #2C2416; }
+  .viewfinder .vf-icon { font-size: 56px; opacity: .6; transition: .3s; }
+  .viewfinder .vf-hint {
+    font-size: 15px; color: var(--muted); margin-top: 12px;
+    font-weight: 400; transition: .3s;
+  }
+  .viewfinder .vf-grid {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 200px; height: 200px;
+    border: 1px solid rgba(184,149,106,.3);
+    border-radius: 12px;
+  }
+  .viewfinder .vf-grid::before, .viewfinder .vf-grid::after {
+    content: ''; position: absolute;
+  }
+  .viewfinder .vf-grid::before {
+    top: -1px; left: 20%; width: 60%; height: 1px;
+    background: rgba(184,149,106,.4);
+  }
+  .viewfinder .vf-grid::after {
+    left: -1px; top: 20%; width: 1px; height: 60%;
+    background: rgba(184,149,106,.4);
+  }
+  .viewfinder.has-photo .vf-grid { display: none; }
+  .viewfinder.has-photo .vf-icon { display: none; }
+  .viewfinder.has-photo .vf-hint {
+    color: rgba(255,255,255,.6); font-size: 13px; margin-top: 8px;
+  }
+
+  /* Species chip floating over photo */
+  .species-chip {
+    position: absolute; bottom: 16px; left: 16px;
+    background: rgba(255,255,255,.92); backdrop-filter: blur(12px);
+    padding: 8px 16px; border-radius: 999px;
+    font-size: 14px; font-weight: 600; color: var(--text);
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    z-index: 2;
+  }
+  .species-chip .arrow { font-size: 10px; color: var(--gold); }
+
+  /* Progress dots */
+  .progress-dots {
+    display: flex; gap: 8px; padding: 16px 24px; justify-content: center;
+  }
+  .progress-dots .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--subtle); transition: all .3s;
+  }
+  .progress-dots .dot.done { background: var(--gold); width: 24px; border-radius: 4px; }
+  .progress-dots .dot.current { background: var(--gold); transform: scale(1.5); }
+
+  /* Info section */
+  .info-section {
+    padding: 0 24px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .info-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .info-row .lbl { font-size: 14px; color: var(--muted); }
+  .info-row .val { font-size: 14px; font-weight: 500; color: var(--text); }
+
+  /* Batch mode indicator */
+  .batch-indicator {
+    margin: 16px 24px; padding: 12px 16px;
+    background: #FFF; border-radius: 12px;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .batch-indicator .bi-dot {
+    width: 10px; height: 10px; border-radius: 50%; background: var(--gold);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .4; transform: scale(1.3); }
+  }
+  .batch-indicator .bi-text { font-size: 13px; color: var(--muted); }
+  .batch-indicator .bi-count {
+    margin-left: auto; font-size: 20px; font-weight: 700; color: var(--gold);
+  }
+
+  /* Action button */
+  .action-btn {
+    margin: 20px 24px; width: calc(100% - 48px);
+    padding: 18px; border-radius: 16px; border: none;
+    font-size: 17px; font-weight: 600; cursor: pointer;
+    font-family: inherit; letter-spacing: .3px;
+    transition: all .2s;
+    background: var(--gold); color: #FFF;
+    box-shadow: 0 8px 24px rgba(184,149,106,.25);
+  }
+  .action-btn:active { transform: scale(.97); opacity: .9; }
+
+  /* Sheet — bottom panel */
+  .sheet {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 375px; max-height: 60vh;
+    background: #FFF; border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 24px rgba(0,0,0,.08);
+    padding: 20px 24px 36px; z-index: 10;
+    display: none;
+  }
+  .sheet.show { display: block; }
+  .sheet .handle {
+    width: 36px; height: 4px; border-radius: 2px;
+    background: #D4C4A8; margin: 0 auto 20px;
+  }
+  .sheet h3 { font-size: 18px; margin-bottom: 16px; }
+  .sheet-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .sheet-item .si-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: rgba(184,149,106,.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .sheet-item .si-text { flex:1; }
+  .sheet-item .si-name { font-size: 14px; font-weight: 600; }
+  .sheet-item .si-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Success */
+  .success {
+    text-align: center; padding: 60px 32px;
+  }
+  .success .cert {
+    width: 120px; height: 140px; margin: 0 auto 24px;
+    background: linear-gradient(135deg, #FDFBF7, #F7F4EF);
+    border: 2px solid var(--gold); border-radius: 4px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,.06);
+  }
+  .success .cert .cert-seal {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1.5px solid var(--gold); color: var(--gold);
+    font-family: 'Noto Serif SC', serif; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 8px;
+  }
+  .success .cert .cert-id {
+    font-size: 11px; font-family: monospace; color: var(--gold);
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+<div class="phone" id="app">
+
+  <!-- Viewfinder -->
+  <div class="viewfinder" id="vf" onclick="capture()">
+    <div class="vf-grid"></div>
+    <div class="vf-icon">📷</div>
+    <div class="vf-hint">拍摄龟背纹路</div>
+    <div class="species-chip" onclick="event.stopPropagation(); showSheet()">
+      🐢 剃刀龟 <span class="arrow">›</span>
+    </div>
+  </div>
+
+  <!-- Progress dots -->
+  <div class="progress-dots" id="dots">
+    <div class="dot current"></div>
+    <div class="dot"></div><div class="dot"></div>
+    <div class="dot"></div><div class="dot"></div>
+  </div>
+
+  <!-- Info -->
+  <div class="info-section">
+    <div class="info-row">
+      <span class="lbl">窝次</span>
+      <span class="val">2026春 · 第3窝</span>
+    </div>
+    <div class="info-row">
+      <span class="lbl">登记日期</span>
+      <span class="val">2026-05-15</span>
+    </div>
+  </div>
+
+  <!-- Batch indicator -->
+  <div class="batch-indicator">
+    <div class="bi-dot"></div>
+    <span class="bi-text">批量登记中</span>
+    <span class="bi-count" id="biCount">0</span>
+  </div>
+
+  <!-- Action -->
+  <button class="action-btn" id="actBtn" onclick="capture()">
+    📸 拍摄第一只
+  </button>
+
+  <!-- Sheet -->
+  <div class="sheet" id="sheet">
+    <div class="handle"></div>
+    <h3>选择品种</h3>
+    <div class="sheet-item" onclick="selectSpecies('剃刀龟'); hideSheet()">
+      <div class="si-icon">🐢</div>
+      <div class="si-text"><div class="si-name">剃刀龟</div><div class="si-desc">Sternotherus carinatus</div></div>
+      <span style="color:var(--gold)">✓</span>
+    </div>
+    <div class="sheet-item" onclick="selectSpecies('麝香龟'); hideSheet()">
+      <div class="si-icon">🐢</div>
+      <div class="si-text"><div class="si-name">麝香龟</div><div class="si-desc">Sternotherus odoratus</div></div>
+    </div>
+    <div class="sheet-item" onclick="selectSpecies('巨头麝香龟'); hideSheet()">
+      <div class="si-icon">🐢</div>
+      <div class="si-text"><div class="si-name">巨头麝香龟</div><div class="si-desc">Sternotherus minor</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let captured = 0, batchAnchors = [];
+
+function capture() {
+  captured++;
+  const vf = document.getElementById('vf');
+  vf.classList.add('has-photo');
+
+  // Update dots
+  const dots = document.querySelectorAll('.progress-dots .dot');
+  dots.forEach((d, i) => {
+    d.classList.remove('current');
+    if (i < captured) d.classList.add('done');
+  });
+  if (captured < dots.length) dots[captured].classList.add('current');
+
+  // Update counter
+  document.getElementById('biCount').textContent = captured;
+
+  // Update button
+  const btn = document.getElementById('actBtn');
+  btn.textContent = `📸 继续拍（第${captured+1}只）`;
+
+  // Add to batch
+  batchAnchors.push({ id: 'DGG-T-00000'+(4+captured), idx: captured });
+
+  // Simulate photo feedback
+  vf.innerHTML = '<div style="font-size:48px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">🐢</div>' +
+    '<div class="vf-hint" style="position:absolute;bottom:20px;width:100%;text-align:center">已登记 · 继续拍下一只</div>' +
+    '<div class="species-chip" onclick="event.stopPropagation(); showSheet()">🐢 剃刀龟 <span class="arrow">›</span></div>';
+
+  setTimeout(() => {
+    vf.innerHTML = '<div class="vf-grid"></div><div class="vf-icon">📷</div>' +
+      '<div class="vf-hint">拍摄第'+(captured+1)+'只苗子</div>' +
+      '<div class="species-chip" onclick="event.stopPropagation(); showSheet()">🐢 剃刀龟 <span class="arrow">›</span></div>';
+    vf.classList.remove('has-photo');
+  }, 800);
+
+  if (captured >= 5) finishBatch();
+}
+
+function showSheet() { document.getElementById('sheet').classList.add('show'); }
+function hideSheet() { document.getElementById('sheet').classList.remove('show'); }
+function selectSpecies(name) {
+  document.querySelector('.species-chip').innerHTML = '🐢 ' + name + ' <span class="arrow">›</span>';
+}
+
+function finishBatch() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="success">
+      <div class="cert">
+        <div class="cert-seal">印</div>
+        <div class="cert-id">DGG-T-000005</div>
+      </div>
+      <h2 style="font-size:22px;margin-bottom:8px">🎉 登记完成</h2>
+      <p style="color:var(--muted);font-size:14px">剃刀龟 · 一窝${captured}只</p>
+      <p style="color:var(--green);font-size:12px;margin:12px 0">🎁 剩余 196 次</p>
+      <div style="text-align:left;margin:20px 0">
+        ${batchAnchors.map(a =>
+          '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">' +
+          '<span>🐢 #'+a.idx+'</span>' +
+          '<span style="font-family:monospace;color:var(--gold);font-size:11px">'+a.id+'</span></div>'
+        ).join('')}
+      </div>
+      <button class="action-btn" style="margin:12px 0;width:100%">📤 晒到群里</button>
+      <button style="background:transparent;border:1.5px solid var(--gold);color:var(--gold);padding:16px;border-radius:16px;font-size:16px;font-weight:600;width:100%;cursor:pointer">返回首页</button>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>

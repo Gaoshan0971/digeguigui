@@ -1,8 +1,192 @@
-.pg { min-height:100vh; }
-.uh { text-align:center; padding:32px 20px 20px; }
-.uh-title { font-size:24px; font-weight:800; }
-.img-box { margin:0 16px 12px; height:360rpx; background:var(--bg-card); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-sm); }
-.img-placeholder { height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
-.up-img { width:100%; height:100%; }
-.picker-row { display:flex; justify-content:space-between; padding:12px 0; font-size:15px; color:var(--text); }
-.inp { background:var(--bg); border-radius:var(--radius-sm); padding:12px; margin-top:8px; font-size:15px; color:var(--text); }
+/* ===== 取景框（画廊风） ===== */
+.vf-box {
+  width: calc(100% - 32px); height: 320px; margin: 16px 16px 0;
+  border-radius: 16px; overflow: hidden; position: relative;
+  background: linear-gradient(180deg, #EDE8DF, #E0D8C8);
+  border: 1.5px dashed #D4C4A8; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .25s;
+}
+.vf-box.has-photo { border-style: solid; border-color: #B8956A; height: 260px; }
+.vf-img { width: 100%; height: 100%; }
+
+/* 空态取景框网格 */
+.vf-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.vf-grid {
+  position: absolute; width: 180px; height: 180px;
+  border: 1px solid rgba(184,149,106,.25); border-radius: 12px;
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+}
+.vf-icon { font-size: 48px; opacity: .55; z-index: 1; }
+.vf-hint { font-size: 14px; color: #8C7B6B; margin-top: 10px; z-index: 1; }
+
+/* 品种浮标 */
+.species-chip {
+  position: absolute; bottom: 14px; left: 14px;
+  background: rgba(255,255,255,.92); backdrop-filter: blur(12px);
+  padding: 8px 16px; border-radius: 999px;
+  font-size: 13px; font-weight: 600; color: #2C2416;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  display: flex; align-items: center; gap: 6px;
+}
+.chip-arrow { font-size: 10px; color: #B8956A; }
+
+/* ===== 批量计数器（工作室风） ===== */
+.counter-hero {
+  text-align: center; padding: 20px 24px 12px;
+}
+.counter-num {
+  font-size: 56px; font-weight: 300; color: #B8956A;
+  line-height: 1; letter-spacing: -3px;
+}
+.counter-label {
+  display: block; font-size: 12px; color: #8C7B6B;
+  text-transform: uppercase; letter-spacing: 2px; margin-top: 4px;
+}
+
+/* ===== 照片条 ===== */
+.photo-strip {
+  display: flex; gap: 8px; padding: 8px 16px;
+  white-space: nowrap; width: 100%;
+}
+.strip-slot {
+  flex-shrink: 0; width: 80px; height: 80px;
+  border-radius: 10px; border: 1.5px dashed #D4C4A8;
+  display: inline-flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: #FDFBF7;
+}
+.strip-slot.filled { border-style: solid; border-color: #7A9A9A; background: rgba(122,154,122,.08); }
+.strip-slot.add-slot { border-color: #EBE5DB; background: transparent; }
+
+/* ===== 信息卡片（证书房风） ===== */
+.info-card {
+  margin: 12px 16px; background: #FFF;
+  border-radius: 14px; padding: 18px 20px;
+  border: 1px solid #EBE5DB;
+  box-shadow: 0 1px 3px rgba(0,0,0,.03);
+}
+.info-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid #EBE5DB;
+  cursor: pointer;
+}
+.info-lbl { font-size: 14px; color: #8C7B6B; }
+.info-val { font-size: 14px; font-weight: 500; }
+.info-val.gold { color: #B8956A; }
+.info-inp {
+  width: 100%; border: none; outline: none;
+  font-size: 14px; color: #2C2416; padding: 10px 0;
+  background: transparent; border-bottom: 1px solid #EBE5DB;
+}
+.info-inp::placeholder { color: #B8A99A; }
+
+/* ===== 批量开关 ===== */
+.batch-row {
+  margin: 12px 16px; padding: 12px 16px;
+  background: #FFF; border-radius: 12px;
+  border: 1px solid #EBE5DB;
+  display: flex; justify-content: space-between; align-items: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,.03);
+}
+.batch-title { font-size: 14px; font-weight: 600; color: #2C2416; }
+.batch-desc { font-size: 11px; color: #8C7B6B; display: block; margin-top: 2px; }
+.toggle {
+  width: 44px; height: 26px; border-radius: 13px;
+  background: #D4C4A8; position: relative; transition: .2s;
+  flex-shrink: 0;
+}
+.toggle.on { background: #B8956A; }
+.toggle-knob {
+  width: 20px; height: 20px; border-radius: 10px;
+  background: #FFF; position: absolute; top: 3px; left: 3px;
+  transition: .2s; box-shadow: 0 1px 3px rgba(0,0,0,.12);
+}
+.toggle.on .toggle-knob { left: 21px; }
+
+/* ===== 锚定时间线 ===== */
+.timeline {
+  margin: 8px 16px; padding: 14px 16px;
+  background: #FFF; border-radius: 12px;
+  border: 1px solid #EBE5DB; max-height: 200px; overflow-y: auto;
+}
+.tl-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 0; border-bottom: 1px solid #EBE5DB;
+}
+.tl-row:last-child { border-bottom: none; }
+.tl-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: #B8956A; flex-shrink: 0;
+}
+.tl-body { flex: 1; }
+.tl-name { font-size: 12px; font-weight: 600; display: block; }
+.tl-id { font-size: 10px; color: #B8956A; font-family: monospace; }
+.tl-time { font-size: 10px; color: #B8A99A; }
+
+/* ===== 按钮 ===== */
+.btn-gold {
+  margin: 12px 16px; width: calc(100% - 32px);
+  padding: 16px; border-radius: 14px; border: none;
+  font-size: 16px; font-weight: 600; letter-spacing: .3px;
+  background: linear-gradient(135deg, #B8956A, #9A7B52);
+  color: #FFF; box-shadow: 0 4px 16px rgba(184,149,106,.25);
+}
+.btn-gold:active { transform: scale(.97); opacity: .9; }
+.btn-gold[disabled] { opacity: .35; }
+
+.btn-outline {
+  margin: 0 16px; width: calc(100% - 32px);
+  padding: 15px; border-radius: 14px;
+  border: 1.5px solid #B8956A; background: transparent;
+  color: #B8956A; font-size: 16px; font-weight: 600;
+}
+.btn-outline:active { transform: scale(.97); }
+.btn-outline-sm {
+  margin-top: 8px; width: 100%; padding: 10px;
+  border-radius: 10px; border: 1px solid #B8956A;
+  background: transparent; color: #B8956A;
+  font-size: 14px; font-weight: 500;
+}
+
+/* ===== 福利提示 ===== */
+.perk-text {
+  font-size: 11px; color: #B8A99A;
+}
+
+/* ===== 证书成功页（证书房风） ===== */
+.cert-page {
+  margin: 32px 16px 16px; padding: 40px 24px;
+  background: #FFF; border-radius: 16px;
+  border: 1px solid #EBE5DB;
+  text-align: center;
+  box-shadow: 0 4px 18px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.025);
+  display: flex; flex-direction: column; align-items: center;
+}
+.cert-seal {
+  width: 64px; height: 64px; border-radius: 50%;
+  border: 2px solid #B8956A; color: #B8956A;
+  font-size: 24px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px; transform: rotate(-6deg);
+}
+.cert-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.cert-sub { font-size: 13px; color: #8C7B6B; margin-bottom: 12px; }
+.cert-id {
+  font-size: 18px; font-weight: 700; color: #B8956A;
+  letter-spacing: 2px; font-family: monospace; margin-bottom: 8px;
+}
+.cert-remaining { font-size: 12px; color: #7A9A9A; margin-bottom: 16px; }
+.cert-note {
+  font-size: 11px; color: #B8A99A; padding-top: 16px;
+  border-top: 1px solid #EBE5DB; width: 100%;
+}
+
+/* 批量结果行 */
+.batch-result-row {
+  display: flex; justify-content: space-between; padding: 7px 0;
+  border-bottom: 1px solid #EBE5DB; font-size: 13px;
+  width: 100%;
+}
+.batch-result-id {
+  font-size: 10px; color: #B8956A; font-family: monospace;
+}
