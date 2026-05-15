@@ -33,10 +33,13 @@ module.exports.register = function (app) {
     res.json({ ok: true, data: rows, total, limit, offset });
   });
 
-  // GET /api/v2/species/:id — 物种详情
+  // GET /api/v2/species/:id — 物种详情，支持 ?lang=en
   app.get('/api/v2/species/:id', (req, res) => {
     const sp = db.prepare('SELECT * FROM species WHERE species_id = ?').get(req.params.id);
     if (!sp) return res.status(404).json({ ok: false, error: '物种不存在' });
+    if (req.query.lang === 'en' && sp.overview_en) {
+      sp.overview = sp.overview_en;
+    }
     res.json({ ok: true, data: sp });
   });
 

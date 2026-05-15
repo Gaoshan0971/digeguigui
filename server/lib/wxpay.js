@@ -11,8 +11,8 @@ const API_V3_KEY = 'Sixianggangyin1415926535897932ss'; // APIv3密钥
 const APPID = 'wxa7aa15e29e828df8';
 const SERIAL_NO = '504AF0ABAF91BE1C80AB850D39E4972F3D00FF1C'; // 证书序列号
 
-const CERT_PATH = path.join(__dirname, '..', 'DigeguiguiID', 'wxpay', 'apiclient_cert.pem');
-const KEY_PATH = path.join(__dirname, '..', 'DigeguiguiID', 'wxpay', 'apiclient_key.pem');
+const CERT_PATH = path.join(__dirname, '..', '..', 'DigeguiguiID', 'wxpay', 'apiclient_cert.pem');
+const KEY_PATH = path.join(__dirname, '..', '..', 'DigeguiguiID', 'wxpay', 'apiclient_key.pem');
 
 // 读商户私钥
 const privKey = fs.readFileSync(KEY_PATH, 'utf-8');

@@ -20,16 +20,21 @@ function register(app) {
     res.json({ ok: true, data: { list, total, page: Number(page), limit: Number(limit) } });
   });
 
-  // GET /api/species/:id — 品种详情
+  // GET /api/species/:id — 品种详情，支持 ?lang=en
   app.get('/api/species/:id', (req, res) => {
     const species = db.prepare('SELECT * FROM species WHERE species_id = ?').get(req.params.id);
     if (!species) return res.status(404).json({ ok: false, error: '品种不存在' });
 
-    // 解析 JSON 字段
+    // JSON 字段
     species.traits = safeJSON(species.traits);
     species.care_params = safeJSON(species.care_params);
 
-    // 该品种下的藏品数
+    // 双语支持
+    if (req.query.lang === 'en' && species.overview_en) {
+      species.overview = species.overview_en;
+    }
+
+    // 藏品数
     const collectionCount = db.prepare('SELECT COUNT(*) as cnt FROM collections WHERE species_id = ? AND is_showcase = 1').get(species.species_id).cnt;
 
     res.json({ ok: true, data: { ...species, collection_count: collectionCount } });

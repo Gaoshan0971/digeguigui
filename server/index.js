@@ -45,6 +45,7 @@ require('./routes/morphs').register(app);
 require('./routes/prices').register(app);
 require('./routes/provenance').register(app);
 require('./routes/payments').register(app);
+require('./routes/labeling').register(app);
 
 // 注册用户路由
 app.post('/api/users/login', (req, res) => {
@@ -167,6 +168,7 @@ function serveStatic(req, res) {
   if (filePath === '/') filePath = '/index.html';
   // 默认走 dataset 页
   if (filePath === '/dataset' || filePath === '/dataset/') filePath = '/dataset/index.html';
+  if (filePath === '/label' || filePath === '/label/') filePath = '/label/index.html';
   
   const fullPath = path.join(WWW, filePath);
   
