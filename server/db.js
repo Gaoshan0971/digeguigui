@@ -252,6 +252,24 @@ const provPath = path.join(__dirname, '..', 'data', 'provenance_schema.sql');
 if (fs.existsSync(provPath)) {
   db.exec(fs.readFileSync(provPath, 'utf-8'));
   console.log('[db] Provenance tables ready');
+
+  // Migration v1.1: 添加免费锚定额度列
+  try {
+    const cols = db.prepare("PRAGMA table_info(breeders)").all().map(c => c.name);
+    if (!cols.includes('free_anchors')) {
+      db.exec("ALTER TABLE breeders ADD COLUMN free_anchors INTEGER DEFAULT 10");
+      console.log('[db] Migration: free_anchors column added to breeders');
+    }
+    // 回填现有 approved 养殖户到 200 个名额
+    const backfilled = db.prepare(
+      "UPDATE breeders SET free_anchors = 200 WHERE cert_status = 'approved' AND free_anchors < 200"
+    ).run();
+    if (backfilled.changes > 0) {
+      console.log(`[db] Backfilled ${backfilled.changes} approved breeders to 200 free anchors`);
+    }
+  } catch (e) {
+    console.error('[db] Migration free_anchors failed:', e.message);
+  }
 }
 
 module.exports = db;

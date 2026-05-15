@@ -13,6 +13,49 @@ if (!fs.existsSync(PROV_DATA_DIR)) {
   fs.mkdirSync(PROV_DATA_DIR, { recursive: true });
 }
 
+// ==================== 共享：创建锚定记录 ====================
+function createAnchorRecord(db, { species_id, individual_name, clutch_id, birth_date, birth_gps_lat, birth_gps_lng,
+  parent_male_anchor, parent_female_anchor, photos, biometric_hash, biometric_model, feature_dim,
+  sex, breeder_id, payment_method }) {
+
+  const seq = db.prepare('SELECT COUNT(*) + 1 as n FROM provenance_anchors').get().n;
+  const anchorId = `${ANCHOR_PREFIX}${String(seq).padStart(6, '0')}`;
+
+  // 写 JSON 文件
+  const jsonFile = path.join(PROV_DATA_DIR, `${anchorId}.json`);
+  const anchorData = {
+    anchor_id: anchorId, species_id, individual_name: individual_name || '', clutch_id: clutch_id || '',
+    birth_date, birth_gps: { lat: birth_gps_lat, lng: birth_gps_lng },
+    parent_male_anchor: parent_male_anchor || null, parent_female_anchor: parent_female_anchor || null,
+    photos, biometric_hash, biometric_model: biometric_model || 'resnet50_v1',
+    feature_dim: feature_dim || 2048, breeder_id, sex: sex || 'unknown',
+    payment_method: payment_method || 'free',
+    created_at: new Date().toISOString()
+  };
+  fs.writeFileSync(jsonFile, JSON.stringify(anchorData, null, 2), 'utf-8');
+
+  // 入 SQLite
+  db.prepare(`INSERT INTO provenance_anchors (anchor_id,breeder_id,species_id,individual_name,sex,birth_date,birth_gps_lat,birth_gps_lng,clutch_id,parent_male_anchor,parent_female_anchor,birth_photos,biometric_hash,biometric_model,feature_dim,git_commit_hash,json_file_path,payment_method) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .run(anchorId, breeder_id, species_id, individual_name||'', sex||'unknown', birth_date, birth_gps_lat||null, birth_gps_lng||null, clutch_id||'', parent_male_anchor||null, parent_female_anchor||null, JSON.stringify(photos), biometric_hash, biometric_model||'resnet50_v1', feature_dim||2048, '', jsonFile, payment_method||'free');
+
+  // Git commit
+  let gitHash = '';
+  try {
+    const repoRoot = path.join(__dirname, '..', '..');
+    execSync(`cd "${repoRoot}" && git add -f "${jsonFile}"`, { timeout: 5000 });
+    execSync(`cd "${repoRoot}" && git commit -m "锚定 ${anchorId} · ${individual_name||'sp'+species_id} · ${birth_date}"`, { timeout: 5000 });
+    gitHash = execSync(`cd "${repoRoot}" && git rev-parse HEAD`, { timeout: 3000 }).toString().trim();
+    execSync(`cd "${repoRoot}" && git push`, { timeout: 15000 });
+    db.prepare('UPDATE provenance_anchors SET git_commit_hash = ? WHERE anchor_id = ?').run(gitHash, anchorId);
+  } catch (e) {
+    console.error('[provenance] git failed:', e.message);
+    gitHash = 'pending';
+  }
+
+  db.prepare('UPDATE breeders SET total_births = total_births + 1 WHERE id = ?').run(breeder_id);
+  return { anchor_id: anchorId, git_commit_hash: gitHash };
+}
+
 module.exports.register = function (app) {
   const db = require('../db');
   const { getUser } = require('../middleware/auth');
@@ -58,41 +101,16 @@ module.exports.register = function (app) {
     const breeder = db.prepare('SELECT id FROM breeders WHERE user_id = ? AND cert_status = ?').get(user.user_id, 'approved');
     if (!breeder) return res.status(403).json({ ok: false, error: '需要认证繁育者身份。先申请 /api/v2/breeders/apply' });
 
-    const seq = db.prepare('SELECT COUNT(*) + 1 as n FROM provenance_anchors').get().n;
-    const anchorId = `${ANCHOR_PREFIX}${String(seq).padStart(6, '0')}`;
+    const { anchor_id, git_commit_hash: gitHash } = createAnchorRecord(db, {
+      species_id, individual_name, clutch_id, birth_date, birth_gps_lat, birth_gps_lng,
+      parent_male_anchor, parent_female_anchor, photos, biometric_hash, biometric_model,
+      feature_dim, sex, breeder_id: breeder.id, payment_method: 'breeder_credit'
+    });
 
-    // 写 JSON 文件
-    const jsonFile = path.join(PROV_DATA_DIR, `${anchorId}.json`);
-    const anchorData = {
-      anchor_id: anchorId, species_id, individual_name: individual_name || '', clutch_id: clutch_id || '',
-      birth_date, birth_gps: { lat: birth_gps_lat, lng: birth_gps_lng },
-      parent_male_anchor: parent_male_anchor || null, parent_female_anchor: parent_female_anchor || null,
-      photos, biometric_hash, biometric_model: biometric_model || 'resnet50_v1',
-      feature_dim: feature_dim || 2048, breeder_id: breeder.id, sex: sex || 'unknown',
-      created_at: new Date().toISOString()
-    };
-    fs.writeFileSync(jsonFile, JSON.stringify(anchorData, null, 2), 'utf-8');
-
-    // 入 SQLite
-    db.prepare(`INSERT INTO provenance_anchors (anchor_id,breeder_id,species_id,individual_name,sex,birth_date,birth_gps_lat,birth_gps_lng,clutch_id,parent_male_anchor,parent_female_anchor,birth_photos,biometric_hash,biometric_model,feature_dim,git_commit_hash,json_file_path) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .run(anchorId, breeder.id, species_id, individual_name||'', sex||'unknown', birth_date, birth_gps_lat||null, birth_gps_lng||null, clutch_id||'', parent_male_anchor||null, parent_female_anchor||null, JSON.stringify(photos), biometric_hash, biometric_model||'resnet50_v1', feature_dim||2048, '', jsonFile);
-
-    // Git commit
-    let gitHash = '';
-    try {
-      const repoRoot = path.join(__dirname, '..', '..');
-      execSync(`cd "${repoRoot}" && git add -f "${jsonFile}"`, { timeout: 5000 });
-      execSync(`cd "${repoRoot}" && git commit -m "锚定 ${anchorId} · ${individual_name||'sp'+species_id} · ${birth_date}"`, { timeout: 5000 });
-      gitHash = execSync(`cd "${repoRoot}" && git rev-parse HEAD`, { timeout: 3000 }).toString().trim();
-      execSync(`cd "${repoRoot}" && git push`, { timeout: 15000 });
-      db.prepare('UPDATE provenance_anchors SET git_commit_hash = ? WHERE anchor_id = ?').run(gitHash, anchorId);
-    } catch (e) {
-      console.error('[provenance] git failed:', e.message);
-      return res.json({ ok: true, data: { anchor_id: anchorId, git_commit_hash: 'pending', warning: 'Git push failed, will retry' } });
+    if (gitHash === 'pending') {
+      return res.json({ ok: true, data: { anchor_id, git_commit_hash: 'pending', warning: 'Git push failed, will retry' } });
     }
-
-    db.prepare('UPDATE breeders SET total_births = total_births + 1 WHERE id = ?').run(breeder.id);
-    res.json({ ok: true, data: { anchor_id: anchorId, git_commit_hash: gitHash } });
+    res.json({ ok: true, data: { anchor_id, git_commit_hash: gitHash } });
   });
 
   // GET /api/v2/anchors/:anchor_id
@@ -196,6 +214,150 @@ module.exports.register = function (app) {
   app.get('/api/v2/breeders/:id/anchors', (req, res) => {
     const anchors = db.prepare('SELECT * FROM provenance_anchors WHERE breeder_id = ? ORDER BY created_at DESC LIMIT 50').all(req.params.id);
     res.json({ ok: true, data: anchors, total: anchors.length });
+  });
+
+  // ==================== 简化注册（小程序上传页调用）====================
+
+  // POST /api/provenance/register — 带信用检查的锚定
+  // 付费优先级：邀请码 > 繁育者免费额度 > 需付费
+  app.post('/api/provenance/register', (req, res) => {
+    const { species_id, image_base64, notes, city, invite_code } = req.body || {};
+
+    if (!species_id || !image_base64) {
+      return res.status(400).json({ ok: false, error: 'species_id and image_base64 required' });
+    }
+
+    const user = getUser(req, res); if (!user) return;
+
+    // 检查繁育者身份 + 免费额度
+    const breeder = db.prepare(
+      'SELECT id, free_anchors FROM breeders WHERE user_id = ? AND cert_status = ?'
+    ).get(user.user_id, 'approved');
+
+    let paymentMethod = 'paid';
+    let remainingFree = 0;
+
+    // 1) 邀请码优先
+    if (invite_code) {
+      const ic = db.prepare(
+        "SELECT code_id, code FROM invite_codes WHERE code = ? AND used_at = ''"
+      ).get(invite_code.toUpperCase());
+      if (!ic) {
+        return res.status(400).json({ ok: false, error: '邀请码无效或已被使用' });
+      }
+      db.prepare(
+        "UPDATE invite_codes SET used_by=?, used_at=datetime('now','localtime') WHERE code_id=?"
+      ).run(String(user.user_id), ic.code_id);
+      paymentMethod = 'invite';
+    }
+    // 2) 繁育者免费额度
+    else if (breeder && breeder.free_anchors > 0) {
+      db.prepare('UPDATE breeders SET free_anchors = free_anchors - 1 WHERE id = ?')
+        .run(breeder.id);
+      remainingFree = breeder.free_anchors - 1;
+      paymentMethod = 'breeder_credit';
+    }
+    // 3) 需付费
+    else {
+      const msg = breeder
+        ? `免费额度已用完（剩余0）。请使用邀请码或购买锚定包 ¥19.90`
+        : '请先申请繁育者认证，或使用达人邀请码免费领证';
+      return res.status(402).json({
+        ok: false,
+        error: msg,
+        need_payment: true,
+        product_type: 'anchor_single',
+        price: 1990  // 分
+      });
+    }
+
+    // 提取生物特征
+    let biometric_hash = `fallback_${Date.now()}`;
+    try {
+      const tmpFile = `/tmp/prov_${user.user_id}_${Date.now()}.jpg`;
+      const buf = Buffer.from(image_base64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+      fs.writeFileSync(tmpFile, buf);
+      const pyOut = execSync(
+        `/usr/bin/python3 ${path.join(__dirname, '..', '..', 'scripts', 'bio_features.py')} extract ${tmpFile}`,
+        { timeout: 30000 }
+      ).toString().trim();
+      const featData = JSON.parse(pyOut);
+      biometric_hash = featData.feature_hash || biometric_hash;
+      try { fs.unlinkSync(tmpFile); } catch {}
+    } catch (e) {
+      console.error('[provenance] bio_features failed:', e.message);
+    }
+
+    // 创建锚定
+    const birthDate = new Date().toISOString().split('T')[0];
+    const species = db.prepare('SELECT name_cn FROM species WHERE species_id = ?').get(species_id);
+    const individualName = (species?.name_cn || 'sp' + species_id) + '-' + Date.now().toString(36).slice(-4);
+
+    const { anchor_id, git_commit_hash } = createAnchorRecord(db, {
+      species_id,
+      individual_name: individualName,
+      clutch_id: '',
+      birth_date: birthDate,
+      birth_gps_lat: null,
+      birth_gps_lng: null,
+      parent_male_anchor: null,
+      parent_female_anchor: null,
+      photos: [image_base64],
+      biometric_hash,
+      biometric_model: 'resnet50_v1',
+      feature_dim: 2048,
+      sex: 'unknown',
+      breeder_id: breeder ? breeder.id : 0,
+      payment_method: paymentMethod
+    });
+
+    res.json({
+      ok: true,
+      data: {
+        anchor_id,
+        git_commit_hash,
+        payment_method: paymentMethod,
+        remaining_free: remainingFree,
+        species_name: species?.name_cn || ''
+      }
+    });
+  });
+
+  // ==================== 繁育者信息 ====================
+
+  // GET /api/v2/breeders/me — 查看自己的认证状态和余额
+  app.get('/api/v2/breeders/me', (req, res) => {
+    const user = getUser(req, res); if (!user) return;
+
+    const breeder = db.prepare(`
+      SELECT id, cert_status, cert_level, free_anchors, total_births,
+             reputation_score, facility_name, real_name, created_at
+      FROM breeders WHERE user_id = ?
+    `).get(user.user_id);
+
+    if (!breeder) {
+      return res.json({
+        ok: true,
+        data: {
+          has_applied: false,
+          message: '尚未申请繁育者认证。认证通过后赠送200个免费锚定额度。',
+          next_step: 'POST /api/v2/breeders/apply'
+        }
+      });
+    }
+
+    res.json({
+      ok: true,
+      data: {
+        ...breeder,
+        has_applied: true,
+        perks: {
+          trial_slots: 10,
+          certified_slots: 200,
+          note: '申请即送10个试玩名额，认证通过后升级为200个'
+        }
+      }
+    });
   });
 
   console.log('[provenance] Routes registered');

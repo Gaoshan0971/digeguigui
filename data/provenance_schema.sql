@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS breeders (
     cert_level TEXT DEFAULT 'basic',      -- basic(免费) | advanced(¥99/年) | master(邀请制)
     cert_reviewed_at TEXT,                -- 审核时间
 
+    -- 免费锚定额度（申请赠10试玩，认证通过赠200）
+    free_anchors INTEGER DEFAULT 10,
+
     -- 信誉系统
     reputation_score INTEGER DEFAULT 100, -- 初始 100，违规扣分
     total_births INTEGER DEFAULT 0,       -- 总出生登记数
@@ -69,6 +72,9 @@ CREATE TABLE IF NOT EXISTS provenance_anchors (
     -- Git 锚定 (出生一次，不可变)
     git_commit_hash TEXT NOT NULL,        -- Git commit SHA
     json_file_path TEXT,                  -- data/provenance/<anchor_id>.json
+
+    -- 付费方式
+    payment_method TEXT DEFAULT 'free',   -- free | invite | breeder_credit | paid
 
     -- 状态
     status TEXT DEFAULT 'active',         -- active | transferred | deceased
