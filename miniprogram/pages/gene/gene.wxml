@@ -48,7 +48,7 @@
         <view class="flex-between">
           <text class="sc-name">{{item.name_cn}}</text>
           <view class="sc-badges">
-            <text class="tag tag-gold" wx:if="{{item.difficulty}}">{{'⭐'.repeat(item.difficulty)}}</text>
+            <text class="tag tag-gold" wx:if="{{item.difficulty}}">{{item.difficultyStars}}</text>
             <text class="tag tag-dna" wx:if="{{item.morph_heavy}}">🧬 基因控</text>
           </view>
         </view>

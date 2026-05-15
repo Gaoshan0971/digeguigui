@@ -29,7 +29,8 @@ Page({
       // Add morph_heavy flag
       const list = (data.list||[]).map(s => ({
         ...s,
-        morph_heavy: s.traits && JSON.parse(s.traits||'{}').morph_heavy
+        morph_heavy: s.traits && JSON.parse(s.traits||'{}').morph_heavy,
+        difficultyStars: s.difficulty ? '⭐'.repeat(s.difficulty) : ''
       }));
       this.setData({ speciesList: list, loading: false });
     } catch {
