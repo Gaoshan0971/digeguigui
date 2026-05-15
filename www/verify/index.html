@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digeguigui · 龟谷溯源验证</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #F7F4EF;
+    --bronze: #B8956A;
+    --bronze-dark: #9A7B52;
+    --bronze-light: #D4C4A8;
+    --text: #3B3226;
+    --text-muted: #7A6E60;
+    --white: #FFFDF9;
+    --card-shadow: 0 4px 24px rgba(59, 50, 38, 0.10), 0 1px 3px rgba(59, 50, 38, 0.06);
+    --card-shadow-hover: 0 8px 40px rgba(59, 50, 38, 0.14), 0 2px 6px rgba(59, 50, 38, 0.08);
+    --radius: 12px;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Search view ── */
+  .search-container {
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+  }
+  .search-container .logo-mark {
+    font-size: 48px;
+    margin-bottom: 8px;
+    line-height: 1;
+  }
+  .search-container h1 {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.3px;
+    margin-bottom: 6px;
+  }
+  .search-container .subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+    font-weight: 400;
+  }
+  .search-box {
+    display: flex;
+    gap: 8px;
+    background: var(--white);
+    border: 1.5px solid var(--bronze-light);
+    border-radius: var(--radius);
+    padding: 6px 6px 6px 16px;
+    box-shadow: var(--card-shadow);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-box:focus-within {
+    border-color: var(--bronze);
+    box-shadow: var(--card-shadow-hover);
+  }
+  .search-box input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-family: var(--font);
+    font-size: 15px;
+    color: var(--text);
+    background: transparent;
+    min-width: 0;
+  }
+  .search-box input::placeholder { color: var(--text-muted); }
+  .search-box button {
+    background: var(--bronze);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .search-box button:hover { background: var(--bronze-dark); }
+  .search-box button:active { transform: scale(0.97); }
+  .search-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 10px;
+  }
+  .search-hint code {
+    background: var(--white);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    border: 1px solid var(--bronze-light);
+  }
+
+  /* ── Certificate view ── */
+  .cert-wrapper {
+    width: 100%;
+    max-width: 480px;
+    animation: fadeSlideIn 0.45s ease-out;
+  }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .cert-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    padding: 28px 24px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  /* ornamental top bar */
+  .cert-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--bronze-light), var(--bronze), var(--bronze-dark), var(--bronze), var(--bronze-light));
+  }
+  .cert-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--bronze-light), var(--bronze), var(--bronze-dark), var(--bronze), var(--bronze-light));
+  }
+
+  .cert-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-top: 4px;
+  }
+  .cert-header .icon {
+    font-size: 32px;
+    line-height: 1;
+  }
+  .cert-header .title-group .title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.2px;
+  }
+  .cert-header .title-group .title-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 500;
+  }
+
+  /* anchor ID badge */
+  .anchor-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--cream);
+    border: 1px solid var(--bronze-light);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bronze-dark);
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    letter-spacing: 0.3px;
+    margin-bottom: 20px;
+  }
+  .anchor-badge .dot {
+    width: 7px; height: 7px;
+    background: #4CAF50;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15);
+  }
+
+  /* detail rows */
+  .cert-details {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .detail-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .detail-row .label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .detail-row .value {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+    word-break: break-all;
+  }
+  .detail-row .value.species {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--bronze-dark);
+  }
+  .detail-row .value.hash {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--cream);
+    padding: 8px 12px;
+    border-radius: 6px;
+    line-height: 1.5;
+  }
+  .detail-row a.value.hash {
+    color: var(--bronze-dark);
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .detail-row a.value.hash:hover {
+    background: var(--bronze-light);
+    color: #5C3D1E;
+  }
+
+  /* seal / verified stamp */
+  .verified-stamp {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(184, 149, 106, 0.06), rgba(184, 149, 106, 0.12));
+    border-radius: 8px;
+    border: 1px dashed var(--bronze-light);
+  }
+  .verified-stamp .stamp-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .verified-stamp .stamp-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* back link */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 18px;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+  .back-link:hover { color: var(--bronze-dark); }
+
+  /* ── States ── */
+  .state-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+  }
+  .state-message .icon { font-size: 40px; margin-bottom: 12px; }
+  .state-message .msg { font-size: 15px; font-weight: 500; }
+  .state-message .sub { font-size: 13px; margin-top: 4px; }
+
+  .spinner {
+    display: inline-block;
+    width: 28px; height: 28px;
+    border: 3px solid var(--bronze-light);
+    border-top-color: var(--bronze);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hidden { display: none !important; }
+
+  /* ── Responsive: QR / compact ── */
+  @media (max-width: 400px) {
+    .cert-card { padding: 20px 16px 20px; }
+    .cert-header .title-group .title { font-size: 16px; }
+    .detail-row .value.species { font-size: 20px; }
+    .detail-row .value { font-size: 14px; }
+    .detail-row .value.hash { font-size: 11px; }
+  }
+  @media (min-width: 768px) {
+    .cert-card { padding: 36px 32px 32px; }
+    .cert-header .title-group .title { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── SEARCH VIEW ── -->
+<div id="searchView" class="search-container">
+  <div class="logo-mark">🐢</div>
+  <h1>龟谷溯源验证</h1>
+  <p class="subtitle">Digeguigui · Provenance Verification</p>
+  <div class="search-box">
+    <input type="text" id="anchorInput" placeholder="输入锚定编号，如 DGG-T-000004" autocomplete="off" autofocus>
+    <button id="searchBtn">验证</button>
+  </div>
+  <p class="search-hint">示例编号：<code>DGG-T-000004</code></p>
+</div>
+
+<!-- ── CERTIFICATE VIEW ── -->
+<div id="certView" class="cert-wrapper hidden">
+  <div class="cert-card">
+    <div class="cert-header">
+      <span class="icon">📜</span>
+      <div class="title-group">
+        <div class="title">数字溯源证书</div>
+        <div class="title-sub">Digital Provenance Certificate</div>
+      </div>
+    </div>
+
+    <div class="anchor-badge">
+      <span class="dot"></span>
+      <span id="certAnchorId">DGG-T-XXXXXX</span>
+    </div>
+
+    <div class="cert-details">
+      <div class="detail-row">
+        <span class="label">物种 / Species</span>
+        <span class="value species" id="certSpecies">—</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">出生日期 / Birth Date</span>
+        <span class="value" id="certBirthDate">—</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Git 提交哈希 / Commit Hash</span>
+        <a class="value hash" id="certCommitHash" href="#" target="_blank" rel="noopener">—</a>
+      </div>
+    </div>
+
+    <div class="verified-stamp">
+      <span class="stamp-icon">🔒</span>
+      <span class="stamp-text" id="certNote">—</span>
+    </div>
+  </div>
+  <a href="/verify/" class="back-link">← 查询其他编号</a>
+</div>
+
+<!-- ── LOADING ── -->
+<div id="loadingView" class="state-message hidden">
+  <div class="spinner"></div>
+  <p class="msg" style="margin-top:16px;">正在验证锚定记录…</p>
+</div>
+
+<!-- ── ERROR ── -->
+<div id="errorView" class="state-message hidden">
+  <div class="icon">⚠️</div>
+  <p class="msg" id="errorMsg">未找到该锚定记录</p>
+  <p class="sub">请检查编号是否正确后重试</p>
+  <a href="/verify/" class="back-link" style="margin-top:16px;">← 返回查询</a>
+</div>
+
+<script>
+(function() {
+  const API_BASE = 'https://api.digeguigui.com';
+  const GITEE_URL = 'https://gitee.com/zhanghao0971/digeguigui';
+
+  const $searchView  = document.getElementById('searchView');
+  const $certView    = document.getElementById('certView');
+  const $loadingView = document.getElementById('loadingView');
+  const $errorView   = document.getElementById('errorView');
+  const $anchorInput = document.getElementById('anchorInput');
+  const $searchBtn   = document.getElementById('searchBtn');
+  const $errorMsg    = document.getElementById('errorMsg');
+
+  function showView(view) {
+    [$searchView, $certView, $loadingView, $errorView].forEach(v => v.classList.add('hidden'));
+    view.classList.remove('hidden');
+  }
+
+  function renderCertificate(data) {
+    document.getElementById('certAnchorId').textContent = data.anchor_id;
+    document.getElementById('certSpecies').textContent = data.species;
+    document.getElementById('certBirthDate').textContent = data.birth_date;
+
+    const hashLink = document.getElementById('certCommitHash');
+    hashLink.textContent = data.git_commit_hash;
+    hashLink.href = GITEE_URL + '/commit/' + data.git_commit_hash;
+    hashLink.title = '在 Gitee 上查看此提交';
+
+    document.getElementById('certNote').textContent = data.verification_note;
+    showView($certView);
+  }
+
+  async function verifyAnchor(anchorId) {
+    showView($loadingView);
+    try {
+      const resp = await fetch(API_BASE + '/api/v2/anchors/' + encodeURIComponent(anchorId) + '/verify');
+      if (!resp.ok) {
+        if (resp.status === 404) throw new Error('未找到该锚定记录');
+        throw new Error('验证服务异常 (HTTP ' + resp.status + ')');
+      }
+      const json = await resp.json();
+      if (!json.ok || !json.data) {
+        throw new Error('验证数据异常');
+      }
+      renderCertificate(json.data);
+    } catch (err) {
+      $errorMsg.textContent = err.message || '网络错误，请稍后重试';
+      showView($errorView);
+    }
+  }
+
+  function handleSearch() {
+    const raw = $anchorInput.value.trim();
+    if (!raw) { $anchorInput.focus(); return; }
+    // update URL without reload
+    const url = new URL(window.location);
+    url.searchParams.set('anchor_id', raw);
+    window.history.replaceState({}, '', url);
+    verifyAnchor(raw);
+  }
+
+  $searchBtn.addEventListener('click', handleSearch);
+  $anchorInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') handleSearch();
+  });
+
+  // ── On load: check for anchor_id param ──
+  const params = new URLSearchParams(window.location.search);
+  const anchorParam = params.get('anchor_id');
+  if (anchorParam && anchorParam.trim()) {
+    verifyAnchor(anchorParam.trim());
+  } else {
+    showView($searchView);
+  }
+})();
+</script>
+
+</body>
+</html>

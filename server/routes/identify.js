@@ -125,7 +125,8 @@ function register(app) {
 
   // POST /api/identify/share-card — 生成微信分享卡图片
   app.post('/api/identify/share-card', (req, res) => {
-    const { image_base64, species_name, confidence, engine, difficulty, family } = req.body || {};
+    const { image_base64, species_name, confidence, engine, difficulty, family,
+            title, subtitle, footer, brand } = req.body || {};
     if (!image_base64) return res.status(400).json({ ok: false, error: '缺少图片' });
 
     const py = spawnSC(PYTHON, [SHARE_CARD_SCRIPT]);
@@ -134,7 +135,9 @@ function register(app) {
     py.stdin.write(JSON.stringify({
       image_base64, species_name: species_name || '未知品种',
       confidence: confidence || 0, engine: engine || '',
-      difficulty: difficulty || '', family: family || ''
+      difficulty: difficulty || '', family: family || '',
+      title: title || '', subtitle: subtitle || '',
+      footer: footer || '', brand: brand || '滴个龟龟 · 领证溯源'
     }));
     py.stdin.end();
 
@@ -144,6 +147,46 @@ function register(app) {
     py.on('close', code => {
       if (code !== 0) {
         console.error('分享卡生成失败:', stderr);
+        return res.status(500).json({ ok: false, error: '生成失败' });
+      }
+      try {
+        const result = JSON.parse(stdout);
+        if (result.ok) {
+          res.json({ ok: true, data: { image_url: result.url } });
+        } else {
+          res.status(500).json({ ok: false, error: result.error });
+        }
+      } catch {
+        res.status(500).json({ ok: false, error: '解析失败' });
+      }
+    });
+
+    py.on('error', e => {
+      res.status(500).json({ ok: false, error: e.message });
+    });
+  });
+
+  // POST /api/identify/share-card/batch — 批量登记分享卡
+  app.post('/api/identify/share-card/batch', (req, res) => {
+    const { species_name, batch_count, anchor_ids } = req.body || {};
+    if (!species_name || !batch_count || !anchor_ids?.length) {
+      return res.status(400).json({ ok: false, error: '缺少参数' });
+    }
+
+    const py = spawnSC(PYTHON, [SHARE_CARD_SCRIPT]);
+    let stdout = '', stderr = '';
+
+    py.stdin.write(JSON.stringify({
+      mode: 'batch', species_name, batch_count, anchor_ids
+    }));
+    py.stdin.end();
+
+    py.stdout.on('data', d => stdout += d);
+    py.stderr.on('data', d => stderr += d);
+
+    py.on('close', code => {
+      if (code !== 0) {
+        console.error('批量分享卡生成失败:', stderr);
         return res.status(500).json({ ok: false, error: '生成失败' });
       }
       try {
