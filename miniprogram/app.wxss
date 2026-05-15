@@ -50,6 +50,19 @@ page {
 }
 .btn-primary:active { transform: scale(.97); opacity: .9; }
 
+.btn-gold {
+  background: linear-gradient(135deg, #d4a853, #c49a43);
+  color: #1a3a2a;
+  border-radius: 12px;
+  padding: 14px 28px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 16px;
+  margin: 16px;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 16px rgba(212,168,83,.4);
+}
+
 .btn-outline {
   background: transparent;
   color: var(--gold);

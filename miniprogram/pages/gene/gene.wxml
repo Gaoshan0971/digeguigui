@@ -1,8 +1,8 @@
 <!-- pages/gene/gene.wxml 基因 — 品类切换 + 品种百科 + 品系摘要 -->
 <view class="pg">
   <view class="gh">
-    <text class="gh-title">品种基因库</text>
-    <text class="gh-sub">630种 · 159基因 · 167组合品系</text>
+    <text class="gh-title">🧬 选育</text>
+    <text class="gh-sub">基因计算器 · 品系鉴定 · 血统谱系</text>
   </view>
 
   <!-- 品类标签 -->

@@ -1,20 +1,29 @@
 <view class="pg">
   <view class="uh">
-    <text class="uh-title">晒我的龟</text>
+    <text class="uh-title">{{intent=='provenance' ? '📜 上户口 · 领证' : '晒我的爬宠'}}</text>
+    <text class="text-muted" wx:if="{{intent=='provenance' && speciesName}}" style="margin-top:8px">品种：{{speciesName}}</text>
   </view>
   <view class="img-box" bindtap="chooseImage">
     <image wx:if="{{imgUrl}}" src="{{imgUrl}}" mode="aspectFill" class="up-img" />
     <view wx:else class="img-placeholder">
-      <text style="font-size:40px">📸</text>
-      <text class="text-muted">点击选择图片</text>
+      <text style="font-size:40px">{{intent=='provenance' ? '🆔' : '📸'}}</text>
+      <text class="text-muted">{{intent=='provenance' ? '拍一张清晰的龟背纹路' : '点击选择图片'}}</text>
     </view>
   </view>
   <view class="card">
-    <picker mode="selector" range="{{speciesList}}" range-key="name_cn" bindchange="onSpeciesChange">
+    <picker wx:if="{{!speciesId}}" mode="selector" range="{{speciesList}}" range-key="name_cn" bindchange="onSpeciesChange">
       <view class="picker-row"><text>品种</text><text class="text-gold">选择品种 ›</text></view>
     </picker>
-    <input placeholder="描述你的龟..." value="{{caption}}" bindinput="e=>this.setData({caption:e.detail.value})" class="inp" />
+    <view wx:else class="picker-row">
+      <text>品种</text><text class="text-gold">{{speciesName || '已选择'}}</text>
+    </view>
+    <input placeholder="{{intent=='provenance' ? '备注（来源/特征等）' : '描述你的爬宠...'}}" value="{{caption}}" bindinput="e=>this.setData({caption:e.detail.value})" class="inp" />
     <input placeholder="所在城市" value="{{city}}" bindinput="e=>this.setData({city:e.detail.value})" class="inp" />
   </view>
-  <button class="btn-primary" bindtap="submit">发布到品鉴墙</button>
+  <button class="{{intent=='provenance' ? 'btn-gold' : 'btn-primary'}}" bindtap="submit">
+    {{intent=='provenance' ? '📜 确认领证 ¥19.9' : '发布到品鉴墙'}}
+  </button>
+  <view wx:if="{{intent=='provenance'}}" class="card" style="text-align:center;margin-top:8px">
+    <text class="text-muted" style="font-size:12px">🛡️ 出生锚定 · 龟纹AI识别 · 哈希链存证</text>
+  </view>
 </view>

@@ -2,9 +2,9 @@
 <view class="page">
   <!-- Hero 区 -->
   <view class="hero">
-    <text class="hero-icon">🐢</text>
-    <text class="hero-title">拍照识龟</text>
-    <text class="hero-sub">拍一张，认识你的龟</text>
+    <text class="hero-icon">📸</text>
+    <text class="hero-title">晒爬</text>
+    <text class="hero-sub">拍照识品种 · 看品相 · 上户口</text>
   </view>
 
   <!-- 相机预览区 -->
@@ -102,6 +102,7 @@
     <!-- 操作 -->
     <view class="result-actions">
       <button class="btn-primary" bindtap="viewDetail">📖 查看完整饲养指南</button>
+      <button class="btn-gold" bindtap="goProvenance">📜 上户口 · 领证 ¥19.9/只</button>
       <button class="btn-outline" open-type="share">📤 分享给龟友</button>
       <view class="retake-link" bindtap="retake">再识一只 →</view>
     </view>

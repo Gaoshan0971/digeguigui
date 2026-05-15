@@ -2,7 +2,6 @@
   "pages": [
     "pages/identify/identify",
     "pages/gene/gene",
-    "pages/appraise/appraise",
     "pages/my/my",
     "pages/species-detail/species-detail",
     "pages/collection-detail/collection-detail",
@@ -23,9 +22,8 @@
     "backgroundColor": "#FFFFFF",
     "borderStyle": "white",
     "list": [
-      {"pagePath": "pages/identify/identify", "text": "识龟", "iconPath": "images/tab-scan.png", "selectedIconPath": "images/tab-scan-active.png"},
-      {"pagePath": "pages/gene/gene", "text": "基因", "iconPath": "images/tab-dna.png", "selectedIconPath": "images/tab-dna-active.png"},
-      {"pagePath": "pages/appraise/appraise", "text": "品鉴", "iconPath": "images/tab-star.png", "selectedIconPath": "images/tab-star-active.png"},
+      {"pagePath": "pages/gene/gene", "text": "选育", "iconPath": "images/tab-dna.png", "selectedIconPath": "images/tab-dna-active.png"},
+      {"pagePath": "pages/identify/identify", "text": "晒爬", "iconPath": "images/tab-scan.png", "selectedIconPath": "images/tab-scan-active.png"},
       {"pagePath": "pages/my/my", "text": "我的", "iconPath": "images/tab-user.png", "selectedIconPath": "images/tab-user-active.png"}
     ]
   },

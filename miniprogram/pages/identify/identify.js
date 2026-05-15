@@ -132,6 +132,15 @@ Page({
     }
   },
 
+  // 上户口 / 领证
+  goProvenance() {
+    const s = this.data.result && this.data.result.species;
+    if (!s) return;
+    wx.navigateTo({
+      url: '/pages/upload/upload?species_id=' + s.species_id + '&species_name=' + s.name_cn + '&intent=provenance'
+    });
+  },
+
   // 分享
   onShareAppMessage() {
     const s = this.data.result && this.data.result.species;
