@@ -38,8 +38,13 @@
     </view>
 
     <button class="{{intent=='provenance' ? 'btn-gold' : 'btn-primary'}}" bindtap="submit">
-      {{intent=='provenance' ? (inviteVerified ? '📜 免费领证' : '📜 确认领证 ¥19.9') : '发布到品鉴墙'}}
+      {{intent=='provenance' ? (inviteVerified ? '📜 免费领证（邀请码）' : '📜 确认领证') : '发布到品鉴墙'}}
     </button>
+    <view wx:if="{{intent=='provenance' && !submitted}}" style="text-align:center;margin-top:8px">
+      <text class="text-muted" style="font-size:12px">
+        🎁 繁育者认证通过即送200个免费锚定额度 · 手写证明之外多一份区块链认证
+      </text>
+    </view>
   </block>
 
   <!-- 领证成功：分享引导 -->
@@ -47,6 +52,10 @@
     <view class="uh">
       <text class="uh-title">🎉 领证成功！</text>
       <text class="text-muted" style="margin-top:8px">{{speciesName}} 已锚定上链</text>
+      <text style="display:block;margin-top:6px;font-size:18px;font-weight:700;color:#d4a853;letter-spacing:2px">{{anchorId}}</text>
+      <text wx:if="{{remainingFree !== null && remainingFree !== undefined}}" style="display:block;margin-top:4px;font-size:12px;color:#8ab89a">
+        🎁 剩余免费额度：{{remainingFree}} 次
+      </text>
     </view>
     <view class="card" style="text-align:center;padding:32px">
       <text style="font-size:48px;display:block;margin-bottom:16px">📜</text>
