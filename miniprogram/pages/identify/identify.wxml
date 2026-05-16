@@ -99,6 +99,45 @@
       </view>
     </view>
 
+    <!-- 反馈闭环 -->
+    <view class="feedback-section" wx:if="{{!feedbackDone}}">
+      <text class="section-title">🎯 这个结果准吗？</text>
+      <text class="feedback-hint">你的反馈帮我越认越准</text>
+      <view class="feedback-btns">
+        <button class="feedback-btn feedback-confirm" bindtap="confirmResult">
+          <text class="fb-icon">✅</text>
+          <text>就是它</text>
+        </button>
+        <button class="feedback-btn feedback-correct" bindtap="showCorrectionPicker">
+          <text class="fb-icon">🔄</text>
+          <text>不是它，纠错</text>
+        </button>
+        <button class="feedback-btn feedback-reject" bindtap="rejectResult">
+          <text class="fb-icon">❌</text>
+          <text>都不对</text>
+        </button>
+      </view>
+    </view>
+    <view class="feedback-done" wx:if="{{feedbackDone}}">
+      <text class="fb-done-icon">{{feedbackIcon}}</text>
+      <text class="fb-done-text">{{feedbackMsg}}</text>
+    </view>
+
+    <!-- 纠错品种选择 -->
+    <view class="correction-picker" wx:if="{{showPicker}}">
+      <text class="section-title">选正确的品种：</text>
+      <scroll-view scroll-y class="picker-list">
+        <view wx:for="{{correctionCandidates}}" wx:key="species_id" class="picker-item" bindtap="correctResult" data-id="{{item.species_id}}" data-name="{{item.name_cn}}">
+          <text class="picker-name">{{item.name_cn}}</text>
+          <text class="picker-latin">{{item.name_latin}}</text>
+        </view>
+        <view class="picker-item picker-search" bindtap="searchSpecies">
+          <text>🔍 搜索更多品种...</text>
+        </view>
+      </scroll-view>
+      <button class="btn-outline" bindtap="cancelPicker" style="margin-top:12px">取消</button>
+    </view>
+
     <!-- 操作 -->
     <view class="result-actions">
       <button class="btn-primary" bindtap="viewDetail">📖 查看完整饲养指南</button>

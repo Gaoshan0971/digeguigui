@@ -67,17 +67,29 @@ function register(app) {
       return res.status(400).json({ ok: false, error: '纠错时需指定正确的品种ID' });
     }
 
+    // 验证 species_id 是否有效（防止 FK 约束炸进程）
+    const validSpeciesId = (id) => {
+      if (!id) return null;
+      const row = db.prepare('SELECT species_id FROM species WHERE species_id = ?').get(id);
+      return row ? id : null;
+    };
+
     const finalSpeciesId = feedback_type === 'rejected' ? null
-      : feedback_type === 'corrected' ? user_species_id : model_species_id;
+      : feedback_type === 'corrected' ? validSpeciesId(user_species_id) : validSpeciesId(model_species_id);
 
-    const result = db.prepare(`
-      INSERT INTO identify_feedback (user_token, image_base64, model_species_id,
-        model_confidence, model_top3, engine, user_species_id, feedback_type)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(token, image_base64, model_species_id || null, model_confidence || 0,
-      JSON.stringify(model_top3 || []), engine || '', finalSpeciesId, feedback_type);
+    try {
+      const result = db.prepare(`
+        INSERT INTO identify_feedback (user_token, image_base64, model_species_id,
+          model_confidence, model_top3, engine, user_species_id, feedback_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(token, image_base64, model_species_id || null, model_confidence || 0,
+        JSON.stringify(model_top3 || []), engine || '', finalSpeciesId, feedback_type);
 
-    res.json({ ok: true, data: { feedback_id: result.lastInsertRowid } });
+      res.json({ ok: true, data: { feedback_id: result.lastInsertRowid } });
+    } catch (e) {
+      console.error('反馈写入失败:', e.message);
+      res.status(500).json({ ok: false, error: '反馈保存失败' });
+    }
   });
 
   // GET /api/identify/feedback/stats — 管理端统计

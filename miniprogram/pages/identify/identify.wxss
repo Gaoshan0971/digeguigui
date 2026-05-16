@@ -134,3 +134,55 @@
   text-align: center; padding: 12px;
   color: var(--text-muted); font-size: 14px;
 }
+
+/* ===== 反馈闭环 ===== */
+.feedback-section {
+  margin: 0 16px; padding: 20px;
+  background: var(--bg-card); border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.feedback-hint {
+  font-size: 13px; color: var(--text-muted);
+  display: block; margin-bottom: 16px; margin-top: 4px;
+}
+.feedback-btns {
+  display: flex; gap: 8px;
+}
+.feedback-btn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+  padding: 14px 8px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600;
+  border: 1px solid var(--border); background: #FFF;
+  line-height: 1.2; margin: 0;
+}
+.feedback-btn::after { border: none; }
+.fb-icon { font-size: 22px; }
+.feedback-confirm { border-color: #4CAF50; color: #2E7D32; }
+.feedback-correct { border-color: #FF9800; color: #E65100; }
+.feedback-reject { border-color: #9E9E9E; color: #616161; }
+
+.feedback-done {
+  margin: 0 16px; padding: 20px;
+  background: #F0FDF4; border: 1px solid #BBF7D0;
+  border-radius: var(--radius); text-align: center;
+}
+.fb-done-icon { font-size: 32px; display: block; margin-bottom: 8px; }
+.fb-done-text { font-size: 15px; color: #166534; font-weight: 500; }
+
+/* 纠错品种选择 */
+.correction-picker {
+  margin: 12px 16px; padding: 16px;
+  background: var(--bg-card); border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.picker-list {
+  max-height: 360rpx; margin: 12px 0;
+}
+.picker-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 12px; border-bottom: 1px solid var(--border);
+}
+.picker-name { font-size: 15px; color: var(--text); font-weight: 500; }
+.picker-latin { font-size: 12px; color: var(--text-muted); font-style: italic; }
+.picker-search { color: var(--gold); justify-content: center; border-bottom: none; }
