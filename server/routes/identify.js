@@ -1,20 +1,20 @@
-// routes/identify.js — AI 拍照识龟（本地模型 + 混元兜底）
+// routes/identify.js — AI 拍照识龟（双模型合璧 + 混元兜底）
 const db = require('../db');
 const { spawn } = require('child_process');
 const path = require('path');
 
-const INFER_SCRIPT = path.join(__dirname, '..', '..', 'scripts', 'turtle_infer.py');
+const INFER_SCRIPT = path.join(__dirname, '..', '..', 'scripts', 'turtle_infer_v2.py');
 const PYTHON = '/usr/bin/python3';
 
 function register(app) {
 
-  // POST /api/identify — AI 识别龟种
+  // POST /api/identify — AI 识别龟种（双模型 ensemble）
   app.post('/api/identify', async (req, res) => {
     const { image_base64 } = req.body || {};
     if (!image_base64) return res.status(400).json({ ok: false, error: '请上传图片' });
 
     try {
-      // ── 第一步：本地模型推理 ──
+      // ── 第一步：双模型推理 ──
       let localResult = null;
       try {
         localResult = await callLocalModel(image_base64);
@@ -23,21 +23,56 @@ function register(app) {
       }
 
       // ── 判断是否够置信 ──
-      if (localResult && localResult.length > 0 && localResult[0].confidence >= 50) {
-        // 本地模型够准，直接用
-        const enriched = await enrichLocalResult(localResult);
-        return res.json({
-          ok: true,
-          data: { ...enriched, engine: 'efficientnet' }
-        });
+      if (localResult && localResult.predictions?.length > 0) {
+        const top = localResult.predictions[0];
+        
+        // 直接结论：Top-1 ≥ 70% 且与第二差距 ≥ 15%
+        if (localResult.verdict?.is_direct) {
+          const enriched = await enrichPredictions(localResult.predictions);
+          return res.json({
+            ok: true,
+            data: {
+              verdict: {
+                name_cn: enriched[0]?.name_cn || top.species_label,
+                name_latin: enriched[0]?.name_latin || '',
+                confidence: top.confidence,
+                species_id: enriched[0]?.species_id || null,
+                is_direct: true,
+              },
+              candidates: enriched.slice(0, 3),
+              engine: 'ensemble',
+              models: localResult.engines || {},
+            }
+          });
+        }
+        
+        // 不够直接结论但本地有结果（Top-1 ≥ 50%）
+        if (top.confidence >= 50) {
+          const enriched = await enrichPredictions(localResult.predictions);
+          return res.json({
+            ok: true,
+            data: {
+              verdict: {
+                name_cn: enriched[0]?.name_cn || top.species_label,
+                name_latin: enriched[0]?.name_latin || '',
+                confidence: top.confidence,
+                species_id: enriched[0]?.species_id || null,
+                is_direct: false,
+                hint: '请从候选中确认',
+              },
+              candidates: enriched.slice(0, 5),
+              engine: 'ensemble',
+              models: localResult.engines || {},
+            }
+          });
+        }
       }
 
       // ── 降级：混元视觉 ──
       const hunyuanResult = await callHunyuanVision(image_base64);
       const enriched = await enrichWithSpeciesDB(hunyuanResult);
-      // 如果本地有结果但不够置信，作为混元的参考
-      if (localResult?.[0]) {
-        enriched.local_hint = localResult[0].species;
+      if (localResult?.predictions?.[0]) {
+        enriched.local_hint = localResult.predictions[0].species_label;
       }
       res.json({
         ok: true,
@@ -219,7 +254,37 @@ function register(app) {
   });
 }
 
-// ========== 本地 EfficientNet 模型 ==========
+// ========== 双模型结果匹配数据库 ==========
+
+async function enrichPredictions(predictions) {
+  const enriched = [];
+  for (const pred of predictions) {
+    let species = null;
+    
+    // B站模型：直接用 species_id
+    if (pred.species_id) {
+      species = db.prepare('SELECT * FROM species WHERE species_id = ?').get(pred.species_id);
+    }
+    
+    // 旧模型或降级：模糊匹配中文名/拉丁名
+    if (!species && pred.species_label) {
+      species = db.prepare(
+        'SELECT * FROM species WHERE name_cn LIKE ? OR name_latin LIKE ? LIMIT 1'
+      ).get(`%${pred.species_label}%`, `%${pred.species_label}%`);
+    }
+    
+    enriched.push({
+      name_cn: species?.name_cn || pred.species_label || '?',
+      name_latin: species?.name_latin || pred.species_label || '',
+      confidence: pred.confidence,
+      species_id: species?.species_id || pred.species_id || null,
+      source: pred.source || 'unknown',
+    });
+  }
+  return enriched;
+}
+
+// ========== 本地 EfficientNet 双模型 ==========
 
 function callLocalModel(base64Image) {
   return new Promise((resolve, reject) => {
