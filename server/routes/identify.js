@@ -3,18 +3,17 @@ const db = require('../db');
 const { spawn } = require('child_process');
 const path = require('path');
 
-const INFER_SCRIPT = path.join(__dirname, '..', '..', 'scripts', 'turtle_infer_v2.py');
+const INFER_URL = 'http://127.0.0.1:3457/predict';
 const PYTHON = '/usr/bin/python3';
 
 function register(app) {
 
-  // POST /api/identify — AI 识别龟种（双模型 ensemble）
+  // POST /api/identify — AI 识别龟种（单模型，直接给结论）
   app.post('/api/identify', async (req, res) => {
     const { image_base64 } = req.body || {};
     if (!image_base64) return res.status(400).json({ ok: false, error: '请上传图片' });
 
     try {
-      // ── 第一步：双模型推理 ──
       let localResult = null;
       try {
         localResult = await callLocalModel(image_base64);
@@ -22,62 +21,47 @@ function register(app) {
         console.log('本地模型不可用，降级到混元:', e.message);
       }
 
-      // ── 判断是否够置信 ──
-      if (localResult && localResult.predictions?.length > 0) {
-        const top = localResult.predictions[0];
+      if (localResult?.verdict?.species_id) {
+        const verdict = localResult.verdict;
+        const species = db.prepare('SELECT * FROM species WHERE species_id = ?').get(verdict.species_id);
         
-        // 直接结论：Top-1 ≥ 70% 且与第二差距 ≥ 15%
-        if (localResult.verdict?.is_direct) {
-          const enriched = await enrichPredictions(localResult.predictions);
-          return res.json({
-            ok: true,
-            data: {
-              verdict: {
-                name_cn: enriched[0]?.name_cn || top.species_label,
-                name_latin: enriched[0]?.name_latin || '',
-                confidence: top.confidence,
-                species_id: enriched[0]?.species_id || null,
-                is_direct: true,
-              },
-              candidates: enriched.slice(0, 3),
-              engine: 'ensemble',
-              models: localResult.engines || {},
-            }
-          });
-        }
-        
-        // 不够直接结论但本地有结果（Top-1 ≥ 50%）
-        if (top.confidence >= 50) {
-          const enriched = await enrichPredictions(localResult.predictions);
-          return res.json({
-            ok: true,
-            data: {
-              verdict: {
-                name_cn: enriched[0]?.name_cn || top.species_label,
-                name_latin: enriched[0]?.name_latin || '',
-                confidence: top.confidence,
-                species_id: enriched[0]?.species_id || null,
-                is_direct: false,
-                hint: '请从候选中确认',
-              },
-              candidates: enriched.slice(0, 5),
-              engine: 'ensemble',
-              models: localResult.engines || {},
-            }
-          });
-        }
+        // 丰富候选列表
+        const candidates = (localResult.candidates || []).map(c => {
+          const sp = c.species_id ? db.prepare('SELECT name_cn, name_latin FROM species WHERE species_id = ?').get(c.species_id) : null;
+          return {
+            name_cn: sp?.name_cn || c.label || '?',
+            name_latin: sp?.name_latin || '',
+            confidence: c.confidence,
+            species_id: c.species_id,
+          };
+        });
+
+        const response = {
+          ok: true,
+          data: {
+            verdict: {
+              name_cn: species?.name_cn || '未知',
+              name_latin: species?.name_latin || '',
+              confidence: verdict.confidence,
+              species_id: verdict.species_id,
+              is_direct: verdict.is_direct,
+            },
+            candidates: candidates.slice(0, verdict.is_direct ? 3 : 5),
+            engine: localResult.engine || 'efficientnet',
+          }
+        };
+
+        // 直接结论 → 返回
+        if (verdict.is_direct) return res.json(response);
+
+        // 不够确定但有结果 → 返回带候选
+        if (verdict.confidence >= 50) return res.json(response);
       }
 
       // ── 降级：混元视觉 ──
       const hunyuanResult = await callHunyuanVision(image_base64);
       const enriched = await enrichWithSpeciesDB(hunyuanResult);
-      if (localResult?.predictions?.[0]) {
-        enriched.local_hint = localResult.predictions[0].species_label;
-      }
-      res.json({
-        ok: true,
-        data: { ...enriched, engine: 'hunyuan' }
-      });
+      res.json({ ok: true, data: { ...enriched, engine: 'hunyuan' } });
 
     } catch (e) {
       console.error('AI识别失败:', e.message);
@@ -254,91 +238,15 @@ function register(app) {
   });
 }
 
-// ========== 双模型结果匹配数据库 ==========
-
-async function enrichPredictions(predictions) {
-  const enriched = [];
-  for (const pred of predictions) {
-    let species = null;
-    
-    // B站模型：直接用 species_id
-    if (pred.species_id) {
-      species = db.prepare('SELECT * FROM species WHERE species_id = ?').get(pred.species_id);
-    }
-    
-    // 旧模型或降级：模糊匹配中文名/拉丁名
-    if (!species && pred.species_label) {
-      species = db.prepare(
-        'SELECT * FROM species WHERE name_cn LIKE ? OR name_latin LIKE ? LIMIT 1'
-      ).get(`%${pred.species_label}%`, `%${pred.species_label}%`);
-    }
-    
-    enriched.push({
-      name_cn: species?.name_cn || pred.species_label || '?',
-      name_latin: species?.name_latin || pred.species_label || '',
-      confidence: pred.confidence,
-      species_id: species?.species_id || pred.species_id || null,
-      source: pred.source || 'unknown',
-    });
-  }
-  return enriched;
-}
-
-// ========== 本地 EfficientNet 双模型 ==========
+// ========== 本地模型推理 ==========
 
 function callLocalModel(base64Image) {
-  return new Promise((resolve, reject) => {
-    const py = spawn(PYTHON, [INFER_SCRIPT]);
-    let stdout = '', stderr = '';
-
-    py.stdin.write(JSON.stringify({ image_base64: base64Image }));
-    py.stdin.end();
-
-    py.stdout.on('data', d => stdout += d);
-    py.stderr.on('data', d => stderr += d);
-
-    py.on('close', code => {
-      if (code !== 0) return reject(new Error(stderr || `exit ${code}`));
-      try {
-        const result = JSON.parse(stdout);
-        resolve(result.data || []);
-      } catch {
-        reject(new Error('模型返回格式异常'));
-      }
-    });
-
-    py.on('error', reject);
-  });
-}
-
-// ========== 本地结果匹配数据库 ==========
-
-async function enrichLocalResult(predictions) {
-  const candidates = [];
-  let topSpecies = null;
-
-  for (const pred of predictions) {
-    // 模糊匹配中文名
-    const species = db.prepare(`
-      SELECT * FROM species
-      WHERE name_cn LIKE ? OR name_latin LIKE ?
-      LIMIT 1
-    `).get(`%${pred.species}%`, `%${pred.species}%`);
-
-    if (species && !topSpecies) {
-      try { species.traits = JSON.parse(species.traits); } catch {}
-      try { species.care_params = JSON.parse(species.care_params); } catch {}
-      topSpecies = { ...species, ai_confidence: pred.confidence };
-    }
-
-    candidates.push({
-      name_cn: pred.species,
-      confidence: pred.confidence,
-      species_id: species ? species.species_id : null
-    });
-  }
-
-  return { species: topSpecies, candidates };
+  return fetch(INFER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image_base64: base64Image }),
+    signal: AbortSignal.timeout(10000),
+  }).then(r => r.json()).then(r => r.data);
 }
 
 // ========== 腾讯混元视觉 API (兜底) ==========

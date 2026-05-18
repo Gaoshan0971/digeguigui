@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""龟类识图推理 v2 — 单模型加载，支持双模型 ensemble（当二者都可用时）"""
-import sys, json, base64, io, re, os, torch, torch.nn as nn
+"""龟类识图推理 — 单模型，直接给结论"""
+import sys, json, base64, io, re, torch, torch.nn as nn
 from torchvision import transforms, models
 from PIL import Image
 
 IMAGE_SIZE = 224
-MODELS_DIR = '/home/ubuntu/digeguigui/models'
+MODEL_PATH = '/home/ubuntu/digeguigui/models/turtle_iden_unified.pth'
+FALLBACK_PATH = '/home/ubuntu/digeguigui/models/turtle_iden_bili_v1.pth'  # 新模型未就绪时降级
 
 transform = transforms.Compose([
     transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
@@ -15,14 +16,10 @@ transform = transforms.Compose([
 
 def load_model(path):
     ckpt = torch.load(path, map_location='cpu', weights_only=False)
-    # 检查是否有 metadata
-    if 'species_list' in ckpt and 'model_state' in ckpt:
-        species_list = ckpt['species_list']
-        state = ckpt['model_state']
-    else:
-        # 纯 state_dict — 无法确定类别数，回退
+    species_list = ckpt.get('species_list', [])
+    state = ckpt.get('model_state') or ckpt
+    if not species_list:
         return None, []
-    
     num_classes = len(species_list)
     m = models.efficientnet_b0(weights=None)
     m.classifier = nn.Sequential(
@@ -33,42 +30,19 @@ def load_model(path):
     m.eval()
     return m, species_list
 
-def predict(model, species_list, tensor):
-    with torch.no_grad():
-        logits = model(tensor)
-        probs = torch.softmax(logits, dim=1)
-        top_probs, top_indices = torch.topk(probs, min(5, len(species_list)), dim=1)
-    
-    results = []
-    for prob, idx in zip(top_probs[0].tolist(), top_indices[0].tolist()):
-        results.append({
-            'species': species_list[idx],
-            'confidence': round(prob * 100, 1)
-        })
-    return results
-
 def bili_label_to_species_id(label):
+    """B站标签: '0057_Sternotherus_carinatus' → (57, 'Sternotherus carinatus')"""
     m = re.match(r'^(\d{4})_(.+)', label)
     if m:
         return int(m.group(1)), m.group(2).replace('_', ' ')
     return None, label
 
-def parse_old_label(label):
-    """旧模型标签是中文名，直接返回"""
-    return None, label
-
-def merge_predictions(all_preds, parse_fn, source_name):
-    """将模型输出转换成统一格式"""
-    results = []
-    for p in all_preds:
-        sid, display_name = parse_fn(p['species'])
-        results.append({
-            'source': source_name,
-            'species_label': display_name,
-            'species_id': sid,
-            'confidence': p['confidence']
-        })
-    return results
+def unified_label_to_species_id(label):
+    """统一模型标签: '0068' → (68, '')"""
+    try:
+        return int(label), ''
+    except:
+        return None, label
 
 if __name__ == '__main__':
     data = json.loads(sys.stdin.read())
@@ -79,56 +53,43 @@ if __name__ == '__main__':
     img = Image.open(io.BytesIO(img_bytes)).convert('RGB')
     tensor = transform(img).unsqueeze(0)
     
-    all_results = []
-    engines = {}
+    import os
+    model_path = MODEL_PATH if os.path.exists(MODEL_PATH) else FALLBACK_PATH
+    parse_fn = unified_label_to_species_id if model_path == MODEL_PATH else bili_label_to_species_id
     
-    # 加载 B站模型
-    bili_path = os.path.join(MODELS_DIR, 'turtle_iden_bili_v1.pth')
-    if os.path.exists(bili_path):
-        try:
-            bili_model, bili_species = load_model(bili_path)
-            if bili_model:
-                bili_preds = predict(bili_model, bili_species, tensor)
-                all_results.extend(merge_predictions(bili_preds, bili_label_to_species_id, 'bili'))
-                engines['bili'] = True
-        except Exception as e:
-            engines['bili'] = False
-    else:
-        engines['bili'] = False
+    model, species_list = load_model(model_path)
+    if not model:
+        print(json.dumps({'ok': False, 'error': 'model not available'}))
+        sys.exit(1)
     
-    # 加载旧模型
-    old_path = os.path.join(MODELS_DIR, 'turtle_iden_full.pth')
-    if os.path.exists(old_path):
-        try:
-            old_model, old_species = load_model(old_path)
-            if old_model:
-                old_preds = predict(old_model, old_species, tensor)
-                all_results.extend(merge_predictions(old_preds, parse_old_label, 'old'))
-                engines['old'] = True
-        except Exception as e:
-            engines['old'] = False
-    else:
-        engines['old'] = False
+    with torch.no_grad():
+        logits = model(tensor)
+        probs = torch.softmax(logits, dim=1)
+        top_probs, top_indices = torch.topk(probs, min(5, len(species_list)), dim=1)
     
-    # 按置信度排序
-    all_results.sort(key=lambda x: x['confidence'], reverse=True)
+    predictions = []
+    for prob, idx in zip(top_probs[0].tolist(), top_indices[0].tolist()):
+        label = species_list[idx]
+        sid, display = parse_fn(label)
+        predictions.append({
+            'species_id': sid,
+            'label': display or label,
+            'confidence': round(prob * 100, 1)
+        })
     
-    # 判定
-    is_direct = False
-    if len(all_results) >= 1:
-        c1 = all_results[0]['confidence']
-        c2 = all_results[1]['confidence'] if len(all_results) > 1 else 0
-        is_direct = (c1 >= 70) and (c1 - c2 >= 15)
+    top = predictions[0]
+    second = predictions[1] if len(predictions) > 1 else {'confidence': 0}
+    is_direct = top['confidence'] >= 70 and (top['confidence'] - second['confidence']) >= 15
     
     print(json.dumps({
         'ok': True,
         'data': {
-            'predictions': all_results[:5],
             'verdict': {
+                'species_id': top['species_id'],
+                'confidence': top['confidence'],
                 'is_direct': is_direct,
-                'top_confidence': all_results[0]['confidence'] if all_results else 0,
-                'gap': round(all_results[0]['confidence'] - (all_results[1]['confidence'] if len(all_results)>1 else 0), 1) if all_results else 0,
             },
-            'engines': engines,
+            'candidates': predictions[:5],
+            'engine': 'unified' if model_path == MODEL_PATH else 'bili_fallback',
         }
     }))
