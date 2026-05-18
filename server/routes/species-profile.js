@@ -154,8 +154,40 @@ function register(app) {
     const difficultyLabel = ['', '⭐ 入门', '⭐⭐ 简单', '⭐⭐⭐ 中等', '⭐⭐⭐⭐ 较难', '⭐⭐⭐⭐⭐ 专家'][difficulty] || '⭐⭐⭐ 中等';
 
     // ── 3. 市场行情 ──
+    // 国外参考价（三家美国站）
+    const foreignPrices = [];
+    if (marketData.sas_price) foreignPrices.push({ source: 'SnakesAtSunset', price: marketData.sas_price, url: marketData.sas_url });
+    if (marketData.tts_price) {
+      try {
+        const ttsParsed = JSON.parse(marketData.tts_price);
+        const ttsPrice = ttsParsed?.min || ttsParsed;
+        foreignPrices.push({ source: 'TheTurtleSource', price: ttsPrice, url: marketData.tts_url });
+      } catch (e) {
+        foreignPrices.push({ source: 'TheTurtleSource', price: marketData.tts_price, url: marketData.tts_url });
+      }
+    }
+    if (marketData.bw_price) foreignPrices.push({ source: 'BackwaterReptiles', price: marketData.bw_price, url: marketData.bw_url });
+    
+    const foreignMin = foreignPrices.length ? Math.min(...foreignPrices.map(p => parseFloat(p.price) || 0)) : null;
+    const foreignMax = foreignPrices.length ? Math.max(...foreignPrices.map(p => parseFloat(p.price) || 0)) : null;
+    
     const marketSection = {
-      sources: [],
+      domestic: {
+        sources: [],
+        price_min: null,
+        price_max: null,
+        currency: 'CNY',
+        has_data: false,
+      },
+      international: {
+        sources: foreignPrices.map(p => ({ name: p.source, price: p.price, url: p.url || null })),
+        price_min: foreignMin,
+        price_max: foreignMax,
+        currency: 'USD',
+        has_data: foreignPrices.length > 0,
+        disclaimer: '美国市场参考价，非国内实际售价',
+      },
+      // 向后兼容
       tts: marketData.tts_price ? (() => {
         try { return JSON.parse(marketData.tts_price); } catch (e) { return null; }
       })() : null,
@@ -262,6 +294,14 @@ function register(app) {
         training: { image_count: trainingCount },
         // 用户品鉴
         user_appraisals: userAppraisals,
+        // 可用服务（哪些有数据支撑，前端据此亮灯/置灰）
+        available_services: {
+          identify: !!(species.image_url || trainingCount > 0),
+          care: Object.values(careParams).filter(v => v !== null && v !== undefined).length >= 3,
+          appraisal: species.category === '龟' || species.category === '龟类',
+          value: !!(marketData.sas_price || marketData.tts_price || marketData.bw_price),
+          provenance: true,  // 始终可用，用户自主锚定
+        },
       },
     });
   });
