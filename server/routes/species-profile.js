@@ -136,6 +136,17 @@ function register(app) {
     try { careParams = JSON.parse(species.care_params || '{}'); } catch (e) { }
     let marketData = {};
     try { marketData = JSON.parse(species.market_data || '{}'); } catch (e) { }
+
+    // ── 国内价格（species_prices 表）──
+    const priceRow = db.prepare('SELECT * FROM species_prices WHERE species_id = ?').get(speciesId);
+    let domesticPrice = null;
+    if (priceRow && (priceRow.normal_low > 0 || priceRow.normal_high > 0)) {
+      domesticPrice = {
+        price_min: priceRow.normal_low || null,
+        price_max: priceRow.normal_high || null,
+        source: (priceRow.price_note || '').substring(0, 60),
+      };
+    }
     let traits = {};
     try { traits = JSON.parse(species.traits || '{}'); } catch (e) { }
 
@@ -173,11 +184,11 @@ function register(app) {
     
     const marketSection = {
       domestic: {
-        sources: [],
-        price_min: null,
-        price_max: null,
+        price_min: domesticPrice?.price_min || null,
+        price_max: domesticPrice?.price_max || null,
         currency: 'CNY',
-        has_data: false,
+        has_data: !!domesticPrice,
+        source: domesticPrice?.source || '',
       },
       international: {
         price_min: foreignMin,
@@ -299,7 +310,7 @@ function register(app) {
           identify: !!(species.image_url || trainingCount > 0),
           care: Object.values(careParams).filter(v => v !== null && v !== undefined).length >= 3,
           appraisal: species.category === '龟' || species.category === '龟类',
-          value: !!(marketData.sas_price || marketData.tts_price || marketData.bw_price),
+          value: !!(marketData.sas_price || marketData.tts_price || marketData.bw_price || domesticPrice),
           provenance: true,  // 始终可用，用户自主锚定
         },
       },
