@@ -48,6 +48,7 @@ require('./routes/payments').register(app);
 require('./routes/labeling').register(app);
 require('./routes/invite').register(app);
 require('./routes/credits').register(app);
+require('./routes/species-profile').register(app);
 
 // 注册用户路由
 app.post('/api/users/login', (req, res) => {
