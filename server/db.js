@@ -281,6 +281,25 @@ if (fs.existsSync(provPath)) {
   } catch (e) {
     console.error('[db] Migration payment_method failed:', e.message);
   }
+
+  // Migration v1.3: 锚定基因关联表
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS anchor_genes (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        anchor_id   TEXT NOT NULL,
+        gene_id     INTEGER NOT NULL,
+        gene_symbol TEXT NOT NULL DEFAULT '',
+        created_at  TEXT DEFAULT (datetime('now','localtime')),
+        FOREIGN KEY (anchor_id) REFERENCES provenance_anchors(anchor_id),
+        FOREIGN KEY (gene_id) REFERENCES morph_genes(gene_id)
+      )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_anchor_genes_anchor ON anchor_genes(anchor_id)`);
+    console.log('[db] Migration v1.3: anchor_genes table ready');
+  } catch (e) {
+    console.error('[db] Migration anchor_genes failed:', e.message);
+  }
 }
 
 module.exports = db;

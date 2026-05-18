@@ -16,7 +16,7 @@ if (!fs.existsSync(PROV_DATA_DIR)) {
 // ==================== 共享：创建锚定记录 ====================
 function createAnchorRecord(db, { species_id, individual_name, clutch_id, birth_date, birth_gps_lat, birth_gps_lng,
   parent_male_anchor, parent_female_anchor, photos, biometric_hash, biometric_model, feature_dim,
-  sex, breeder_id, payment_method }) {
+  sex, breeder_id, payment_method, gene_symbols }) {
 
   const seq = db.prepare('SELECT COUNT(*) + 1 as n FROM provenance_anchors').get().n;
   const anchorId = `${ANCHOR_PREFIX}${String(seq).padStart(6, '0')}`;
@@ -37,6 +37,19 @@ function createAnchorRecord(db, { species_id, individual_name, clutch_id, birth_
   // 入 SQLite
   db.prepare(`INSERT INTO provenance_anchors (anchor_id,breeder_id,species_id,individual_name,sex,birth_date,birth_gps_lat,birth_gps_lng,clutch_id,parent_male_anchor,parent_female_anchor,birth_photos,biometric_hash,biometric_model,feature_dim,git_commit_hash,json_file_path,payment_method) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(anchorId, breeder_id, species_id, individual_name||'', sex||'unknown', birth_date, birth_gps_lat||null, birth_gps_lng||null, clutch_id||'', parent_male_anchor||null, parent_female_anchor||null, JSON.stringify(photos), biometric_hash, biometric_model||'resnet50_v1', feature_dim||2048, '', jsonFile, payment_method||'free');
+
+  // 关联品系基因
+  if (gene_symbols && gene_symbols.length > 0) {
+    const insertGene = db.prepare(
+      'INSERT OR IGNORE INTO anchor_genes (anchor_id, gene_id, gene_symbol) VALUES (?, ?, ?)'
+    );
+    for (const gs of gene_symbols) {
+      const gene = db.prepare('SELECT gene_id FROM morph_genes WHERE gene_symbol = ?').get(gs);
+      if (gene) {
+        insertGene.run(anchorId, gene.gene_id, gs);
+      }
+    }
+  }
 
   // Git commit
   let gitHash = '';
@@ -158,7 +171,18 @@ module.exports.register = function (app) {
 
     const breeder = db.prepare('SELECT real_name, facility_name, reputation_score FROM breeders WHERE id = ?').get(anchor.breeder_id);
     const species = db.prepare('SELECT name_cn, name_latin FROM species WHERE species_id = ?').get(anchor.species_id);
-    res.json({ ok: true, data: { ...anchor, breeder, species } });
+
+    // 关联基因
+    const genes = db.prepare(`
+      SELECT ag.gene_symbol, mg.gene_name_cn, mg.inheritance, mg.category,
+             mp.visual_price, mp.het_price
+      FROM anchor_genes ag
+      JOIN morph_genes mg ON ag.gene_id = mg.gene_id
+      LEFT JOIN morph_prices mp ON mp.gene_id = mg.gene_id AND mp.species_id = ?
+      WHERE ag.anchor_id = ?
+    `).all(anchor.species_id, req.params.anchor_id);
+
+    res.json({ ok: true, data: { ...anchor, breeder, species, genes } });
   });
 
   // GET /api/v2/anchors/:anchor_id/chain — 溯源时间线
@@ -259,7 +283,7 @@ module.exports.register = function (app) {
   // POST /api/provenance/register — 带信用检查的锚定
   // 付费优先级：邀请码 > 繁育者免费额度 > 需付费
   app.post('/api/provenance/register', (req, res) => {
-    const { species_id, image_base64, notes, city, invite_code } = req.body || {};
+    const { species_id, image_base64, notes, city, invite_code, gene_symbols } = req.body || {};
 
     if (!species_id || !image_base64) {
       return res.status(400).json({ ok: false, error: 'species_id and image_base64 required' });
@@ -346,7 +370,8 @@ module.exports.register = function (app) {
       feature_dim: 2048,
       sex: 'unknown',
       breeder_id: breeder ? breeder.id : null,
-      payment_method: paymentMethod
+      payment_method: paymentMethod,
+      gene_symbols: gene_symbols || [],
     });
 
     res.json({
