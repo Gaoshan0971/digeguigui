@@ -386,6 +386,175 @@ module.exports.register = function (app) {
     });
   });
 
+  // ==================== 批量出生锚定 ====================
+
+  // POST /api/v2/anchors/batch — 批量登记（养殖户场景：一窝几十只一口气上户口）
+  app.post('/api/v2/anchors/batch', (req, res) => {
+    const { clutch_id, birth_date, species_id, parent_male_anchor, parent_female_anchor,
+            sex, entries, skip_git_push } = req.body || {};
+
+    if (!species_id || !entries || !Array.isArray(entries) || entries.length === 0) {
+      return res.status(400).json({ ok: false, error: 'species_id and entries[] required' });
+    }
+
+    const user = getUser(req, res); if (!user) return;
+
+    const breeder = db.prepare('SELECT id FROM breeders WHERE user_id = ? AND cert_status = ?')
+      .get(user.user_id, 'approved');
+    if (!breeder) return res.status(403).json({ ok: false, error: '需要认证繁育者身份' });
+
+    const species = db.prepare('SELECT name_cn FROM species WHERE species_id = ?').get(species_id);
+    const speciesName = species?.name_cn || 'sp' + species_id;
+    const batchDate = birth_date || new Date().toISOString().split('T')[0];
+
+    const results = [];
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      const individualName = entry.individual_name ||
+        `${speciesName}-${batchDate.replace(/-/g, '')}-${String(i + 1).padStart(3, '0')}`;
+
+      try {
+        const { anchor_id, git_commit_hash } = createAnchorRecord(db, {
+          species_id,
+          individual_name: individualName,
+          clutch_id: clutch_id || '',
+          birth_date: batchDate,
+          birth_gps_lat: entry.birth_gps_lat || null,
+          birth_gps_lng: entry.birth_gps_lng || null,
+          parent_male_anchor: parent_male_anchor || null,
+          parent_female_anchor: parent_female_anchor || null,
+          photos: entry.photos || [],
+          biometric_hash: entry.biometric_hash || `batch_${Date.now()}_${i}`,
+          biometric_model: 'resnet50_v1',
+          feature_dim: 2048,
+          sex: sex || entry.sex || 'unknown',
+          breeder_id: breeder.id,
+          payment_method: 'breeder_credit',
+          gene_symbols: entry.gene_symbols || [],
+        });
+        results.push({ index: i, ok: true, anchor_id, git_commit_hash, name: individualName });
+      } catch (e) {
+        results.push({ index: i, ok: false, error: e.message, name: individualName });
+      }
+    }
+
+    res.json({
+      ok: true,
+      data: {
+        total: entries.length,
+        success: results.filter(r => r.ok).length,
+        failed: results.filter(r => !r.ok).length,
+        results,
+      },
+    });
+  });
+
+  // ==================== 身份证详情 ====================
+
+  // GET /api/v2/provenance/card/:anchor_id — 完整身份证（含物种/基因/繁育者/验证链）
+  app.get('/api/v2/provenance/card/:anchor_id', (req, res) => {
+    const anchor = db.prepare(`
+      SELECT pa.*, s.name_cn, s.name_latin, s.common_name_en, s.family,
+             s.image_url, s.difficulty
+      FROM provenance_anchors pa
+      JOIN species s ON pa.species_id = s.species_id
+      WHERE pa.anchor_id = ?
+    `).get(req.params.anchor_id);
+
+    if (!anchor) return res.status(404).json({ ok: false, error: '身份证不存在' });
+
+    const breeder = db.prepare(
+      'SELECT real_name, facility_name, reputation_score, cert_status FROM breeders WHERE id = ?'
+    ).get(anchor.breeder_id);
+
+    const genes = db.prepare(`
+      SELECT ag.gene_symbol, mg.gene_name_cn, mg.inheritance, mg.category
+      FROM anchor_genes ag
+      JOIN morph_genes mg ON ag.gene_id = mg.gene_id
+      WHERE ag.anchor_id = ?
+    `).all(req.params.anchor_id);
+
+    // 计算哈希链验证状态
+    const hashValid = anchor.git_commit_hash && anchor.git_commit_hash !== 'pending';
+
+    res.json({
+      ok: true,
+      data: {
+        anchor_id: anchor.anchor_id,
+        individual_name: anchor.individual_name,
+        birth_date: anchor.birth_date,
+        sex: anchor.sex,
+        species: {
+          id: anchor.species_id,
+          name_cn: anchor.name_cn,
+          name_latin: anchor.name_latin,
+          common_name_en: anchor.common_name_en,
+          family: anchor.family,
+          image: anchor.image_url,
+        },
+        breeder: breeder ? {
+          name: breeder.real_name,
+          facility: breeder.facility_name,
+          reputation: breeder.reputation_score,
+          certified: breeder.cert_status === 'approved',
+        } : null,
+        genes: genes.map(g => ({
+          symbol: g.gene_symbol,
+          name: g.gene_name_cn,
+          inheritance: g.inheritance,
+          category: g.category,
+        })),
+        verification: {
+          hash_valid: hashValid,
+          git_commit: anchor.git_commit_hash || null,
+          registered_at: anchor.created_at,
+        },
+        parent_anchors: {
+          male: anchor.parent_male_anchor || null,
+          female: anchor.parent_female_anchor || null,
+        },
+      },
+    });
+  });
+
+  // ==================== 公开验证 ====================
+
+  // GET /api/v2/provenance/verify/:anchor_id — 无需登录，扫码验证
+  app.get('/api/v2/provenance/verify/:anchor_id', (req, res) => {
+    const anchor = db.prepare(`
+      SELECT pa.anchor_id, pa.individual_name, pa.birth_date, pa.sex,
+             pa.git_commit_hash, pa.created_at,
+             s.name_cn, s.name_latin, s.common_name_en
+      FROM provenance_anchors pa
+      JOIN species s ON pa.species_id = s.species_id
+      WHERE pa.anchor_id = ?
+    `).get(req.params.anchor_id);
+
+    if (!anchor) return res.status(404).json({ ok: false, error: 'not found' });
+
+    const genes = db.prepare(`
+      SELECT mg.gene_symbol, mg.gene_name_cn
+      FROM anchor_genes ag
+      JOIN morph_genes mg ON ag.gene_id = mg.gene_id
+      WHERE ag.anchor_id = ?
+    `).all(req.params.anchor_id);
+
+    res.json({
+      ok: true,
+      data: {
+        anchor_id: anchor.anchor_id,
+        name: anchor.individual_name,
+        species: anchor.name_cn || anchor.name_latin,
+        species_latin: anchor.name_latin,
+        birth_date: anchor.birth_date,
+        sex: anchor.sex,
+        genes: genes.map(g => g.gene_symbol),
+        verified: !!anchor.git_commit_hash && anchor.git_commit_hash !== 'pending',
+        registered: anchor.created_at,
+      },
+    });
+  });
+
 
   console.log('[provenance] Routes registered');
 };
