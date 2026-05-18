@@ -180,12 +180,12 @@ function register(app) {
         has_data: false,
       },
       international: {
-        sources: foreignPrices.map(p => ({ name: p.source, price: p.price, url: p.url || null })),
         price_min: foreignMin,
         price_max: foreignMax,
         currency: 'USD',
         has_data: foreignPrices.length > 0,
-        disclaimer: '美国市场参考价，非国内实际售价',
+        source_count: foreignPrices.length,
+        disclaimer: '国际行情参考价',
       },
       // 向后兼容
       tts: marketData.tts_price ? (() => {
