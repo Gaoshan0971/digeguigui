@@ -214,6 +214,7 @@ def search_videos(keyword, count=5):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('bvid', nargs='?', help='单视频 BV号')
+    parser.add_argument('--label', default='', help='视频标签')
     parser.add_argument('--batch', action='store_true', help='批量跑已知价格视频')
     parser.add_argument('--search', help='搜索关键词')
     parser.add_argument('--interval', type=int, default=2, help='抽帧间隔(秒)')
@@ -237,7 +238,7 @@ if __name__ == '__main__':
         print(f'\n📊 总计提取: {total} 条价格')
     
     elif args.bvid:
-        process_video(args.bvid)
+        process_video(args.bvid, args.label)
     
     else:
         parser.print_help()
