@@ -57,8 +57,9 @@ class TurtleIdentifier:
                 print(f'[infer] Failed to load {name}: {e}')
     
     def _parse_unified(self, label):
+        # unified model label format: '0057', '0389' etc. -> striped to int species_id
         try:
-            return int(label), ''
+            return int(label.lstrip('0') or '0'), ''
         except:
             return None, label
     
