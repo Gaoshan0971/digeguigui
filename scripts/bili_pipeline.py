@@ -91,7 +91,7 @@ def search_videos(keyword, max_results=20):
                 dur = v.get("duration", "0:00")
                 parts = dur.split(":")
                 seconds = int(parts[0]) * 60 + int(parts[1]) if len(parts) == 2 else 0
-                if seconds < 60 or seconds > 1800:
+                if seconds < 60 or seconds > 600:  # 1-10分钟
                     continue
                 
                 # 清理标题中的HTML标签
@@ -151,20 +151,43 @@ def download_video(url, output_path):
         return False
 
 def extract_frames(video_path, output_dir, prefix="frame"):
-    """ffmpeg scene change detection → key frames."""
+    """ffmpeg scene change detection → key frames. Samples from throughout video."""
     os.makedirs(output_dir, exist_ok=True)
     fname = os.path.join(output_dir, f"{prefix}_%04d.jpg")
     
-    cmd = (
-        f'ffmpeg -i "{video_path}" '
-        f'-vf "select=gt(scene\\,{SCENE_THRESHOLD}),scale=640:-1" '
-        f'-vsync vfr -q:v 3 '
-        f'-frames:v {MAX_FRAMES_PER_VIDEO * 2} '
-        f'"{fname}" -y -loglevel error'
+    # Get video duration
+    import subprocess as sp
+    dur_out = sp.run(
+        f'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "{video_path}"',
+        shell=True, capture_output=True, text=True, timeout=10
     )
-    subprocess.run(cmd, shell=True, timeout=60)
+    duration = float(dur_out.stdout.strip()) if dur_out.stdout.strip() else 300
     
-    return sorted(Path(output_dir).glob(f"{prefix}_*.jpg"))
+    # For long videos, sample 3 segments: 20%, 50%, 70%
+    segments = []
+    if duration > 300:
+        segments = [(duration * 0.2, 60), (duration * 0.5, 60), (duration * 0.7, 60)]
+    else:
+        segments = [(0, duration)]
+    
+    all_frames = []
+    for seg_start, seg_len in segments:
+        cmd = (
+            f'ffmpeg -ss {seg_start:.0f} -t {seg_len:.0f} -i "{video_path}" '
+            f'-vf "select=gt(scene\\,{SCENE_THRESHOLD}),scale=640:-1" '
+            f'-vsync vfr -q:v 3 '
+            f'-frames:v {MAX_FRAMES_PER_VIDEO} '
+            f'"{fname}" -y -loglevel error'
+        )
+        try:
+            sp.run(cmd, shell=True, timeout=90)
+        except sp.TimeoutExpired:
+            print(f"    ⚠️ ffmpeg timeout on segment {seg_start:.0f}s, skipping")
+        
+        seg_frames = sorted(Path(output_dir).glob(f"{prefix}_*.jpg"))
+        all_frames.extend(seg_frames)
+    
+    return all_frames
 
 def deduplicate_frames(frames, threshold=DEDUP_THRESHOLD):
     """Perceptual hash dedup."""
