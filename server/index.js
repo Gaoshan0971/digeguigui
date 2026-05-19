@@ -51,6 +51,31 @@ require('./routes/credits').register(app);
 require('./routes/species-profile').register(app);
 require('./routes/breeding-plan').register(app);
 
+// ── MCP 代理 → :3458 ──
+routes.push({ method: 'POST', path: '/mcp', handler: (req, res, params) => {
+  const body = JSON.stringify(req.body || {});
+  const proxyHeaders = { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) };
+  if (req.headers['authorization']) proxyHeaders['authorization'] = req.headers['authorization'];
+  if (req.headers['x-api-key']) proxyHeaders['x-api-key'] = req.headers['x-api-key'];
+  
+  const proxyReq = http.request({
+    hostname: '127.0.0.1', port: 3458,
+    path: '/mcp', method: req.method,
+    headers: proxyHeaders,
+  }, proxyRes => {
+    for (const [k, v] of Object.entries(proxyRes.headers)) {
+      res.setHeader(k, v);
+    }
+    res.writeHead(proxyRes.statusCode);
+    proxyRes.pipe(res);
+  });
+  proxyReq.on('error', () => { 
+    res.writeHead(502); 
+    res.end(JSON.stringify({ ok: false, error: 'MCP服务暂不可用' })); 
+  });
+  proxyReq.end(body);
+}});
+
 // 注册用户路由
 app.post('/api/users/login', (req, res) => {
   const { openid, nickname = '', avatar_url = '' } = req.body || {};
