@@ -3,19 +3,26 @@ const db = require('../db');
 
 function register(app) {
 
-  // GET /api/species — 品种列表
+  // GET /api/species — 品种列表（支持圈内分组+俗称搜索）
   app.get('/api/species', (req, res) => {
-    const { family, keyword, page = 1, limit = 20 } = req.query;
+    const { family, group, keyword, q, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
+    const searchTerm = q || keyword;
 
     let where = 'WHERE 1=1';
     const params = [];
 
     if (family) { where += ' AND family = ?'; params.push(family); }
-    if (keyword) { where += ' AND (name_cn LIKE ? OR name_latin LIKE ?)'; params.push(`%${keyword}%`, `%${keyword}%`); }
+    if (group) { where += ' AND group_tags LIKE ?'; params.push(`%${group}%`); }
+    if (searchTerm) { 
+      // Search species name + aliases
+      where += ` AND (s.name_cn LIKE ? OR s.name_latin LIKE ? 
+                OR s.species_id IN (SELECT species_id FROM species_aliases WHERE alias_name LIKE ?))`; 
+      params.push(`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`); 
+    }
 
-    const total = db.prepare(`SELECT COUNT(*) as cnt FROM species ${where}`).get(...params).cnt;
-    const list = db.prepare(`SELECT * FROM species ${where} ORDER BY difficulty ASC, name_cn ASC LIMIT ? OFFSET ?`).all(...params, Number(limit), offset);
+    const total = db.prepare(`SELECT COUNT(*) as cnt FROM species s ${where}`).get(...params).cnt;
+    const list = db.prepare(`SELECT s.*, (SELECT GROUP_CONCAT(alias_name) FROM species_aliases WHERE species_id=s.species_id) as aliases FROM species s ${where} ORDER BY s.difficulty ASC, s.name_cn ASC LIMIT ? OFFSET ?`).all(...params, Number(limit), offset);
 
     res.json({ ok: true, data: { list, total, page: Number(page), limit: Number(limit) } });
   });
