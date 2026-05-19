@@ -1,22 +1,29 @@
 // routes/identify.js — AI 拍照识龟（双模型合璧 + 混元兜底）
+// 🔒 隐私保护：识龟完全匿名，不记录用户信息，图片脱敏后仅用于训练
 const db = require('../db');
 const { spawn } = require('child_process');
 const path = require('path');
+const { stripEXIF, perceptualHash } = require('../middleware/privacy');
 
 const INFER_URL = 'http://127.0.0.1:3457/predict';
 const PYTHON = '/usr/bin/python3';
 
 function register(app) {
 
-  // POST /api/identify — AI 识别龟种（单模型，直接给结论）
+  // POST /api/identify — AI 识别龟种（🔒 匿名免费，不记录用户）
   app.post('/api/identify', async (req, res) => {
     const { image_base64 } = req.body || {};
     if (!image_base64) return res.status(400).json({ ok: false, error: '请上传图片' });
 
+    // 🔒 隐私保护
+    const cleanImage = stripEXIF(image_base64);
+    const imageHash = perceptualHash(cleanImage);
+    const privacyNotice = '识龟完全匿名，不上传个人信息，图片脱敏后仅用于AI训练';
+
     try {
       let localResult = null;
       try {
-        localResult = await callLocalModel(image_base64);
+        localResult = await callLocalModel(cleanImage);
       } catch (e) {
         console.log('本地模型不可用，降级到混元:', e.message);
       }
@@ -48,6 +55,7 @@ function register(app) {
             },
             candidates: candidates.slice(0, verdict.is_direct ? 3 : 5),
             engine: localResult.engine || 'efficientnet',
+            privacy: privacyNotice,
           }
         };
 
@@ -58,10 +66,10 @@ function register(app) {
         if (verdict.confidence >= 50) return res.json(response);
       }
 
-      // ── 降级：混元视觉 ──
-      const hunyuanResult = await callHunyuanVision(image_base64);
+      // ── 降级：混元视觉（也使用脱敏图片）──
+      const hunyuanResult = await callHunyuanVision(cleanImage);
       const enriched = await enrichWithSpeciesDB(hunyuanResult);
-      res.json({ ok: true, data: { ...enriched, engine: 'hunyuan' } });
+      res.json({ ok: true, data: { ...enriched, engine: 'hunyuan', privacy: privacyNotice } });
 
     } catch (e) {
       console.error('AI识别失败:', e.message);
@@ -71,7 +79,7 @@ function register(app) {
 
   // ───── 反馈闭环 ─────
 
-  // POST /api/identify/feedback — 用户确认/纠错
+  // POST /api/identify/feedback — 用户确认/纠错（🔒 图片脱敏存储）
   app.post('/api/identify/feedback', (req, res) => {
     const {
       image_base64, model_species_id, model_confidence, model_top3,
@@ -86,6 +94,10 @@ function register(app) {
       return res.status(400).json({ ok: false, error: '纠错时需指定正确的品种ID' });
     }
 
+    // 🔒 脱敏存储
+    const cleanImage = stripEXIF(image_base64);
+    const imageHash = perceptualHash(cleanImage);
+
     // 验证 species_id 是否有效（防止 FK 约束炸进程）
     const validSpeciesId = (id) => {
       if (!id) return null;
@@ -98,10 +110,10 @@ function register(app) {
 
     try {
       const result = db.prepare(`
-        INSERT INTO identify_feedback (user_token, image_base64, model_species_id,
+        INSERT INTO identify_feedback (user_token, image_base64, image_hash, model_species_id,
           model_confidence, model_top3, engine, user_species_id, feedback_type)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(token, image_base64, model_species_id || null, model_confidence || 0,
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(token, cleanImage, imageHash, model_species_id || null, model_confidence || 0,
         JSON.stringify(model_top3 || []), engine || '', finalSpeciesId, feedback_type);
 
       res.json({ ok: true, data: { feedback_id: result.lastInsertRowid } });
