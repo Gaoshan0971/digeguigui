@@ -50,6 +50,7 @@ require('./routes/invite').register(app);
 require('./routes/credits').register(app);
 require('./routes/species-profile').register(app);
 require('./routes/breeding-plan').register(app);
+require('./routes/mcp-keys').register(app);
 
 // ── MCP 代理 → :3458 ──
 routes.push({ method: 'POST', path: '/mcp', handler: (req, res, params) => {

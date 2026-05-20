@@ -300,6 +300,37 @@ if (fs.existsSync(provPath)) {
   } catch (e) {
     console.error('[db] Migration anchor_genes failed:', e.message);
   }
+
+  // Migration v1.4: API Key 管理表 (MCP Server)
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS api_keys (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        key_hash    TEXT UNIQUE NOT NULL,
+        name        TEXT NOT NULL DEFAULT '',
+        tier        TEXT NOT NULL CHECK(tier IN ('free','pro','enterprise','internal')) DEFAULT 'free',
+        rate_limit  INTEGER NOT NULL DEFAULT 10,
+        created_by  TEXT DEFAULT '',
+        contact     TEXT DEFAULT '',
+        created_at  TEXT DEFAULT (datetime('now','localtime')),
+        expires_at  TEXT DEFAULT NULL,
+        revoked     INTEGER DEFAULT 0,
+        last_used   TEXT DEFAULT ''
+      )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_tier ON api_keys(tier)`);
+    
+    // Seed: demo + hermes + partner keys
+    const insertKey = db.prepare(`INSERT OR IGNORE INTO api_keys (key_hash, name, tier, rate_limit, created_by) VALUES (?,?,?,?,?)`);
+    insertKey.run('dgb6fadef1b692d77c80e48584', 'demo', 'free', 10, 'seed');
+    insertKey.run('dghm-zk61a3b7c0d4f8e2a9n5p1q', 'hermes', 'internal', 100, 'seed');
+    insertKey.run('dgpro-mk82bv9c1x4n7w3q5y6a', 'partner', 'pro', 60, 'seed');
+    
+    console.log('[db] Migration v1.4: api_keys table ready');
+  } catch (e) {
+    console.error('[db] Migration api_keys failed:', e.message);
+  }
 }
 
 module.exports = db;
