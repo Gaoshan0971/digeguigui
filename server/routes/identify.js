@@ -1,3 +1,4 @@
+const { adminKey } = require('../config');
 // routes/identify.js — AI 拍照识龟（双模型合璧 + 混元兜底）
 // 🔒 隐私保护：识龟完全匿名，不记录用户信息，图片脱敏后仅用于训练
 const db = require('../db');
@@ -126,7 +127,7 @@ function register(app) {
   // GET /api/identify/feedback/stats — 管理端统计
   app.get('/api/identify/feedback/stats', (req, res) => {
     const { admin_key = '' } = req.query;
-    if (admin_key !== 'turtle-admin-2026') return res.status(403).json({ ok: false, error: '无权访问' });
+    if (admin_key !== adminKey) return res.status(403).json({ ok: false, error: '无权访问' });
 
     const total = db.prepare('SELECT COUNT(*) as cnt FROM identify_feedback').get();
     const byType = db.prepare('SELECT feedback_type, COUNT(*) as cnt FROM identify_feedback GROUP BY feedback_type').all();
@@ -148,7 +149,7 @@ function register(app) {
   // GET /api/identify/feedback/export — 导出训练集
   app.get('/api/identify/feedback/export', (req, res) => {
     const { admin_key = '', feedback_type = 'confirmed,corrected', limit = 500 } = req.query;
-    if (admin_key !== 'turtle-admin-2026') return res.status(403).json({ ok: false, error: '无权访问' });
+    if (admin_key !== adminKey) return res.status(403).json({ ok: false, error: '无权访问' });
 
     const types = feedback_type.split(',').map(t => t.trim());
     const placeholders = types.map(() => '?').join(',');

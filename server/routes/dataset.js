@@ -1,8 +1,8 @@
+const { adminKey } = require('../config');
 // routes/dataset.js — 数据集标注提交 + 审核
 const db = require('../db');
 
 // 简单的管理密钥（MVP阶段）
-const ADMIN_KEY = 'turtle-admin-2026';
 
 function register(app) {
 

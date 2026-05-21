@@ -1,3 +1,4 @@
+const { adminKey } = require('../config');
 // routes/credits.js — 锚定额度购买 + 管理员授予
 const crypto = require('crypto');
 
@@ -11,7 +12,6 @@ module.exports.register = function (app) {
     credit_200: { fee: 19900,anchors: 200, name: '锚定额度包(200个)', desc: '¥199 / 200锚定' },
   };
 
-  const ADMIN_KEY = 'turtle-admin-2026';
 
   // ==================== 下单 ====================
 

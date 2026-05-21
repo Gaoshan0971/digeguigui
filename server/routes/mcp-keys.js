@@ -1,10 +1,10 @@
+const { adminKey } = require('../config');
 // routes/mcp-keys.js — API Key 管理 (MCP Server)
 // 设计原则：Agent 自服务 — 无需人类点网页，纯 REST API 闭环
 const path = require('path');
 
 function register(app) {
   const db = require('../db');
-  const adminKey = 'turtle-admin-2026';
 
   // ── 公开发：Agent 查自己的 Key 信息 ──
   app.get('/api/mcp-keys/info', (req, res) => {

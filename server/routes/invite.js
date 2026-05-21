@@ -1,10 +1,10 @@
+const { adminKey } = require('../config');
 // routes/invite.js — 达人邀请码生成 / 核销
 const db = require('../db');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 const path = require('path');
 
-const ADMIN_KEY = 'turtle-admin-2026';
 const SHARE_CARD_SCRIPT = path.join(__dirname, '..', '..', 'scripts', 'share_card.py');
 const PYTHON = '/usr/bin/python3';
 
