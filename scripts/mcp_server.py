@@ -62,26 +62,37 @@ def key_reloader():
 load_keys_from_db()
 threading.Thread(target=key_reloader, daemon=True).start()
 
-RATE_COUNTERS = {}  # {key: [(timestamp, ...)]}
+RATE_COUNTERS = {}  # {key: [(timestamp, ...)]} — per-minute
+RATE_HOURS = {}     # {key: [(timestamp, ...)]} — per-hour (硬防刮库)
 RATE_COUNTERS_LOCK = threading.Lock()
+HOURLY_HARD_LIMIT = 200  # 单 Key 每小时最多 200 次，超过直接封
 
 def check_rate(key):
-    """限速检查，返回 (allowed, remaining)"""
+    """限速检查，返回 (allowed, remaining, message)"""
     with API_KEYS_LOCK:
         key_info = API_KEYS.get(key)
     if not key_info:
-        return False, 0
+        return False, 0, 'invalid'
     now = time.time()
     with RATE_COUNTERS_LOCK:
+        # ── 小时级硬限制 ──
+        if key not in RATE_HOURS:
+            RATE_HOURS[key] = []
+        RATE_HOURS[key] = [t for t in RATE_HOURS[key] if now - t < 3600]
+        if len(RATE_HOURS[key]) >= HOURLY_HARD_LIMIT:
+            return False, 0, 'hourly'
+        
+        # ── 分钟级限速 ──
         if key not in RATE_COUNTERS:
             RATE_COUNTERS[key] = []
         RATE_COUNTERS[key] = [t for t in RATE_COUNTERS[key] if now - t < 60]
-        limit = key_info['rate']
-        remaining = limit - len(RATE_COUNTERS[key])
+        remaining = key_info['rate'] - len(RATE_COUNTERS[key])
         if remaining <= 0:
-            return False, 0
+            return False, 0, 'minute'
+        
         RATE_COUNTERS[key].append(now)
-    return True, remaining - 1
+        RATE_HOURS[key].append(now)
+    return True, remaining - 1, 'ok'
 
 # ── 数据库 ──
 def get_db():
@@ -212,13 +223,18 @@ def tool_estimate_value(params):
     price = db.execute('SELECT normal_low, normal_high FROM species_prices WHERE species_id = ?', (species_id,)).fetchone()
     base = (price['normal_low'] or 0) if price else 0
     
-    # 品系溢价
+    # 品系溢价 — 兼容 string 和 list
     morph_premium = 0
     if genes:
-        gene_list = [g.strip() for g in genes.split(',')]
+        if isinstance(genes, list):
+            gene_list = genes
+        else:
+            gene_list = [g.strip() for g in str(genes).split(',')]
         for gene in gene_list:
-            mp = db.execute('''SELECT COALESCE(visual_price, het_price, 0) as premium 
-                              FROM morph_prices WHERE gene_symbol = ? LIMIT 1''', (gene,)).fetchone()
+            mp = db.execute('''SELECT COALESCE(mp.visual_price, mp.het_price, 0) as premium 
+                              FROM morph_prices mp
+                              JOIN morph_genes mg ON mg.gene_id = mp.gene_id
+                              WHERE mg.gene_symbol = ? LIMIT 1''', (gene,)).fetchone()
             if mp and mp['premium']:
                 morph_premium += mp['premium']
     
@@ -355,12 +371,12 @@ def tool_search_by_traits(params):
         except:
             care = {}
         
-        # Filter by care params
+        # Filter by care params: 物种范围必须包含用户要求的范围
         match = True
-        if params.get('temp_min') and care.get('temp_min', 0) < float(params['temp_min']):
-            match = False
-        if params.get('temp_max') and care.get('temp_max', 99) > float(params['temp_max']):
-            match = False
+        if params.get('temp_min') and care.get('temp_min', 99) > float(params['temp_min']):
+            match = False  # 物种最低温高于用户要求 → 太热了
+        if params.get('temp_max') and care.get('temp_max', 0) < float(params['temp_max']):
+            match = False  # 物种最高温低于用户要求 → 太冷了
         if params.get('adult_size_cm') and care.get('adult_size', 999) > int(params['adult_size_cm']):
             match = False
         if params.get('lifespan_years') and care.get('lifespan', 0) < int(params['lifespan_years']):
@@ -520,9 +536,24 @@ def tool_health_check(params):
     if not query:
         return {'error': '请描述症状，如 "浮水歪斜 拒食" 或 "壳软 不爱动"'}
     
-    # 分词匹配
+    # 分词匹配 — 支持空格、逗号、顿号 + 中文滑动窗口
     matches = {}
-    for word in query.replace('，', ',').replace('、', ',').replace(' ', ',').split(','):
+    import re
+    tokens = re.split(r'[,，、\s]+', query.strip())
+    # 扩展: 对中文 token 加滑动窗口 + 字符集 (解决"龟壳发软"不连续问题)
+    expanded = []
+    for t in tokens:
+        expanded.append(t)
+        if len(t) >= 2:
+            for w in range(2, min(4, len(t)+1)):
+                for i in range(len(t)-w+1):
+                    expanded.append(t[i:i+w])
+            # 字符集: 单独每个字也参与匹配
+            for ch in t:
+                if '\u4e00' <= ch <= '\u9fff':  # CJK
+                    expanded.append(ch)
+    tokens = expanded
+    for word in tokens:
         word = word.strip()
         if not word:
             continue
@@ -781,17 +812,23 @@ class MCPHandler(BaseHTTPRequestHandler):
             return
         
         # ── 鉴权 + 限速 ──
-        allowed, remaining = check_rate(api_key)
+        allowed, remaining, rate_msg = check_rate(api_key)
         if not allowed:
-            if api_key not in API_KEYS:
+            if rate_msg == 'invalid':
                 self._send_json({
                     'jsonrpc': '2.0', 'id': request_id,
                     'error': {'code': -32001, 'message': 'API Key无效。免费申请: POST https://api.digeguigui.com/api/mcp-keys/apply {\"name\":\"my-agent\"}'}
                 }, 401)
-            else:
+            elif rate_msg == 'hourly':
                 self._send_json({
                     'jsonrpc': '2.0', 'id': request_id,
-                    'error': {'code': -32002, 'message': f'速率限制 ({API_KEYS[api_key]["rate"]}次/分钟)。请稍后再试'}
+                    'error': {'code': -32004, 'message': f'小时配额已用完(200次/小时)。下一小时自动恢复。升级 Pro: https://digeguigui.com'}
+                }, 429)
+            else:
+                rate_limit = API_KEYS[api_key]["rate"]
+                self._send_json({
+                    'jsonrpc': '2.0', 'id': request_id,
+                    'error': {'code': -32002, 'message': f'速率限制 ({rate_limit}次/分钟)。请稍后再试'}
                 }, 429)
             return
         

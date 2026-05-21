@@ -1,0 +1,180 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "滴个龟龟 AI Agent API",
+    "version": "1.0.0",
+    "description": "全球最大爬宠知识库 — 633种爬宠异宠的识别、饲养、品系、价格、身份验证一体化 API。专为 AI Agent 设计。\n\n免费 Key: dgb6fadef1b692d77c80e48584 (10次/分钟)\nPro Key: dgpro-mk82bv9c1x4n7w3q5y6a (60次/分钟，含识龟+估价)\n申请付费Key: https://digeguigui.com",
+    "x-mcp-server": "https://api.digeguigui.com/mcp",
+    "x-mcp-well-known": "https://api.digeguigui.com/.well-known/mcp",
+    "x-api-key-free": "dgb6fadef1b692d77c80e48584"
+  },
+  "servers": [
+    {
+      "url": "https://api.digeguigui.com",
+      "description": "生产环境"
+    }
+  ],
+  "security": [
+    { "ApiKeyHeader": [] }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key"
+      }
+    }
+  },
+  "paths": {
+    "/.well-known/mcp": {
+      "get": {
+        "summary": "MCP 服务发现",
+        "operationId": "discover_mcp",
+        "description": "返回 MCP server 信息：协议版本、端点、鉴权方式、定价",
+        "responses": {
+          "200": {
+            "description": "MCP 服务信息",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "protocol": { "type": "string", "example": "mcp" },
+                    "version": { "type": "string", "example": "1.0" },
+                    "name": { "type": "string", "example": "digeguigui-mcp" },
+                    "endpoint": { "type": "string", "example": "/mcp" },
+                    "authentication": { "type": "string" },
+                    "pricing": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "summary": "MCP JSON-RPC 2.0 端点",
+        "description": "支持 initialize / tools/list / tools/call。完整 MCP 协议实现。",
+        "operationId": "mcp_endpoint",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "jsonrpc": { "type": "string", "enum": ["2.0"] },
+                  "id": { "type": "integer" },
+                  "method": { "type": "string", "enum": ["initialize", "tools/list", "tools/call"] },
+                  "params": { "type": "object" }
+                },
+                "required": ["jsonrpc", "id", "method"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON-RPC 响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "jsonrpc": { "type": "string" },
+                    "id": { "type": "integer" },
+                    "result": { "type": "object" },
+                    "error": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-tools": {
+    "search_species": {
+      "description": "搜索爬宠品种 — 支持中文名/拉丁学名/圈内俗称(如\"小青\"\"蛋龟\")/分组",
+      "parameters": {
+        "q": { "type": "string", "description": "搜索关键词" },
+        "group": { "type": "string", "description": "圈内分组: 蛋龟|陆龟|水龟|闭壳龟|侧颈龟|鳖|箱龟|海龟" },
+        "limit": { "type": "integer", "default": 5 }
+      }
+    },
+    "get_species_profile": {
+      "description": "获取品种完整档案: 分类/饲养参数12维/国内价格/别名/分布/保护等级",
+      "parameters": {
+        "species_id": { "type": "integer", "required": true, "description": "品种ID" }
+      }
+    },
+    "identify_turtle": {
+      "description": "拍照识龟 — 上传龟类图片base64，AI识别品种+置信度 (Pro Key)",
+      "parameters": {
+        "image_base64": { "type": "string", "required": true, "description": "图片base64编码" }
+      }
+    },
+    "estimate_value": {
+      "description": "价值预估 — 基础价+品系基因溢价×品级系数 (Pro Key)",
+      "parameters": {
+        "species_id": { "type": "integer", "required": true },
+        "genes": { "type": "string", "description": "品系基因逗号分隔" },
+        "grade": { "type": "string", "description": "品级: S|A+|A|A-|B+|B|C" }
+      }
+    },
+    "verify_provenance": {
+      "description": "扫码验证爬宠身份证 — 返回品种/出生时间/Git存证哈希 (Pro Key)",
+      "parameters": {
+        "anchor_id": { "type": "string", "required": true, "description": "爬宠身份证锚定ID" }
+      }
+    },
+    "genetics_calculator": {
+      "description": "Punnett基因计算器 — 输入亲本基因型，输出子代概率表",
+      "parameters": {
+        "parent1": { "type": "string", "required": true, "example": "het amel anery" },
+        "parent2": { "type": "string", "required": true, "example": "het amel anery" },
+        "species": { "type": "string", "description": "物种名(可选)" }
+      }
+    },
+    "db_stats": {
+      "description": "数据库全景统计 — 物种/品系/基因/价格/图片覆盖度",
+      "parameters": {}
+    },
+    "search_by_traits": {
+      "description": "按饲养条件反查品种 — 如\"新手友好+小型+水栖+25°C以下\"",
+      "parameters": {
+        "difficulty": { "type": "integer", "description": "难度上限 1-5" },
+        "temp_min": { "type": "number", "description": "最低温度°C" },
+        "temp_max": { "type": "number", "description": "最高温度°C" },
+        "adult_size_cm": { "type": "integer", "description": "成体最大尺寸cm" },
+        "lifespan_years": { "type": "integer", "description": "最小寿命年" },
+        "category": { "type": "string", "description": "品类: 龟/蛇/蜥蜴/蛙/守宫" },
+        "diet": { "type": "string", "description": "食性: 肉食/杂食/草食/昆虫" },
+        "limit": { "type": "integer", "default": 10 }
+      }
+    }
+  },
+  "x-pricing": {
+    "tiers": {
+      "free": {
+        "rate": "10次/分钟",
+        "tools": ["search_species", "get_species_profile", "genetics_calculator", "db_stats", "search_by_traits"],
+        "key": "dgb6fadef1b692d77c80e48584"
+      },
+      "pro": {
+        "rate": "60次/分钟",
+        "tools": ["全部8个工具"],
+        "key": "联系获取"
+      },
+      "enterprise": {
+        "rate": "定制",
+        "tools": ["全部 + 定制端点 + 数据导出"],
+        "contact": "https://digeguigui.com"
+      }
+    }
+  }
+}
