@@ -1,6 +1,8 @@
-# scrape_training_images.py — 从 iNaturalist 批量抓取龟类训练图
-# 目标：56品种 × 20-50张 = 1000-2800张训练集
-# 来源：iNaturalist observations (CC 授权实拍，多角度/多环境)
+"""
+scrape_training_images.py — 从 iNaturalist 批量抓取龟类训练图
+目标：56品种 × 20-50张 = 1000-2800张训练集
+来源：iNaturalist observations (CC 授权实拍，多角度/多环境)
+"""
 
 import requests
 import json

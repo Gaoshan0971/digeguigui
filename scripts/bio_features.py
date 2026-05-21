@@ -1,8 +1,10 @@
-# bio_features.py — 爬宠生物特征提取 + 验证
-# Phase 1: ResNet50 预训练模型 → 2048-d 特征向量 → 余弦相似度匹配
-# 用法:
-#   python3 scripts/bio_features.py extract <image_path>           → 特征向量 base64
-#   python3 scripts/bio_features.py verify <img1> <img2> [阈值]    → {match, confidence}
+"""
+bio_features.py — 爬宠生物特征提取 + 验证
+Phase 1: ResNet50 预训练模型 → 2048-d 特征向量 → 余弦相似度匹配
+用法:
+  /usr/bin/python3 bio_features.py extract <image_path>       → 特征向量 base64
+  /usr/bin/python3 bio_features.py verify <img1> <img2> [阈值] → {match, confidence}
+"""
 #   python3 scripts/bio_features.py batch <img1> <img2> ...        → 批量提取
 
 import sys
