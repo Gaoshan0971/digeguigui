@@ -1,0 +1,66 @@
+{
+  "$schema": "https://glama.ai/mcp/servers/glama.json-schema.json",
+  "name": "digeguigui",
+  "description": "Global reptile & exotic pet knowledge base MCP server — 633 species, AI identification, genetics calculator, 12-dimension care, health diagnosis, pricing, and provenance verification.",
+  "website": "https://digeguigui.com",
+  "categories": ["biology-and-medicine", "knowledge-and-memory"],
+  "tools": [
+    {
+      "name": "search_species",
+      "description": "Search reptile species by Chinese name, Latin name, or common nickname",
+      "tags": ["search", "species", "reptile"]
+    },
+    {
+      "name": "get_species_profile",
+      "description": "Get full species profile: taxonomy, 12-dimension care params, pricing, aliases, conservation status",
+      "tags": ["profile", "care", "pricing"]
+    },
+    {
+      "name": "identify_turtle",
+      "description": "AI-powered turtle identification from image (base64), with confidence scoring",
+      "tags": ["vision", "identification", "AI"]
+    },
+    {
+      "name": "estimate_value",
+      "description": "Estimate market value based on species, morph genes, and grade",
+      "tags": ["pricing", "valuation"]
+    },
+    {
+      "name": "genetics_calculator",
+      "description": "Punnett square genetics calculator for reptile morph breeding",
+      "tags": ["genetics", "breeding", "calculator"]
+    },
+    {
+      "name": "health_check",
+      "description": "Symptom-based diagnosis for reptile/exotic pet diseases with treatment plans",
+      "tags": ["health", "diagnosis", "veterinary"]
+    },
+    {
+      "name": "search_by_traits",
+      "description": "Reverse search: find species by care requirements (temperature, size, diet, difficulty)",
+      "tags": ["search", "care", "recommendation"]
+    },
+    {
+      "name": "db_stats",
+      "description": "Full database statistics: species/morph/gene/price/image coverage",
+      "tags": ["stats", "database"]
+    },
+    {
+      "name": "verify_provenance",
+      "description": "Verify exotic pet digital identity: scan anchor ID, return species, birth date, Git proof hash",
+      "tags": ["provenance", "verification", "identity"]
+    }
+  ],
+  "repository": "https://github.com/Gaoshan0971/digeguigui",
+  "license": "MIT",
+  "transport": ["http", "stdio"],
+  "rateLimit": {
+    "free": "10 req/min",
+    "pro": "60 req/min"
+  },
+  "pricing": {
+    "free": "9 tools, 10 req/min",
+    "pro": "10 tools including provenance verification, 60 req/min",
+    "enterprise": "Custom — contact https://digeguigui.com"
+  }
+}
