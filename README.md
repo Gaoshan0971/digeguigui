@@ -1,5 +1,10 @@
 # 滴个龟龟 — 爬宠品系收藏社区
 
+[![Glama MCP Server](https://glama.ai/mcp/servers/Gaoshan0971/digeguigui/badge)](https://glama.ai/mcp/servers/Gaoshan0971/digeguigui)
+[![MCP.so](https://mcp.so/badge/digeguigui)](https://mcp.so/server/digeguigui/Gaoshan0971)
+[![Awesome MCP](https://awesome.re/mentioned-badge.svg)](https://github.com/punkpeye/awesome-mcp-servers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+
 > 不是养殖，不是看病，不是交易。是看、是懂、是晒。
 
 ---
