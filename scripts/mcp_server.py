@@ -7,9 +7,10 @@ import json, base64, hashlib, time, re, os, sqlite3
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 
-PORT = 3458
-DB_PATH = '/home/ubuntu/digeguigui/data/digeguigui.db'
-INFER_URL = 'http://127.0.0.1:3457/predict'
+PORT = int(os.environ.get('MCP_PORT', '3458'))
+DB_PATH = os.environ.get('DB_PATH', '/home/ubuntu/digeguigui/data/digeguigui.db')
+INFER_URL = os.environ.get('INFER_URL', 'http://127.0.0.1:3457/predict')
+GENECALC_PATH = os.environ.get('GENECALC_PATH', '/home/ubuntu/digeguigui/scripts/genecalc.py')
 
 # ── API Key 管理 ──
 # 从 SQLite 数据库加载，每分钟自动刷新（支持热更新，无需重启）
@@ -285,7 +286,7 @@ def tool_genetics_calculator(params):
     parent2 = params.get('parent2', '')
     species = params.get('species', '')
     
-    cmd = [sys.executable, '/home/ubuntu/digeguigui/scripts/genecalc.py', parent1, parent2]
+    cmd = [sys.executable, GENECALC_PATH, parent1, parent2]
     if species:
         cmd.append(species)
     
